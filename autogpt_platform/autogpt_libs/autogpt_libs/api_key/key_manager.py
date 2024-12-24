@@ -2,33 +2,31 @@ import hashlib
 import secrets
 from typing import NamedTuple
 
+class APIAnahtarKapsayıcı(NamedTuple):
+    """API anahtar parçaları için kapsayıcı."""
 
-class APIKeyContainer(NamedTuple):
-    """Container for API key parts."""
-
-    raw: str
-    prefix: str
-    postfix: str
+    ham: str
+    önek: str
+    sonek: str
     hash: str
 
+class APIAnahtarYönetici:
+    ÖNEK: str = "agpt_"
+    ÖNEK_UZUNLUK: int = 8
+    SONEK_UZUNLUK: int = 8
 
-class APIKeyManager:
-    PREFIX: str = "agpt_"
-    PREFIX_LENGTH: int = 8
-    POSTFIX_LENGTH: int = 8
-
-    def generate_api_key(self) -> APIKeyContainer:
-        """Generate a new API key with all its parts."""
-        raw_key = f"{self.PREFIX}{secrets.token_urlsafe(32)}"
-        return APIKeyContainer(
-            raw=raw_key,
-            prefix=raw_key[: self.PREFIX_LENGTH],
-            postfix=raw_key[-self.POSTFIX_LENGTH :],
-            hash=hashlib.sha256(raw_key.encode()).hexdigest(),
+    def api_anahtarı_oluştur(self) -> APIAnahtarKapsayıcı:
+        """Tüm parçalarıyla yeni bir API anahtarı oluştur."""
+        ham_anahtar = f"{self.ÖNEK}{secrets.token_urlsafe(32)}"
+        return APIAnahtarKapsayıcı(
+            ham=ham_anahtar,
+            önek=ham_anahtar[: self.ÖNEK_UZUNLUK],
+            sonek=ham_anahtar[-self.SONEK_UZUNLUK :],
+            hash=hashlib.sha256(ham_anahtar.encode()).hexdigest(),
         )
 
-    def verify_api_key(self, provided_key: str, stored_hash: str) -> bool:
-        """Verify if a provided API key matches the stored hash."""
-        if not provided_key.startswith(self.PREFIX):
+    def api_anahtarını_doğrula(self, sağlanan_anahtar: str, saklanan_hash: str) -> bool:
+        """Sağlanan bir API anahtarının saklanan hash ile eşleşip eşleşmediğini doğrula."""
+        if not sağlanan_anahtar.startswith(self.ÖNEK):
             return False
-        return hashlib.sha256(provided_key.encode()).hexdigest() == stored_hash
+        return hashlib.sha256(sağlanan_anahtar.encode()).hexdigest() == saklanan_hash
