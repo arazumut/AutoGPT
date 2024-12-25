@@ -16,6 +16,8 @@ def JinaCredentialsField() -> JinaCredentialsInput:
     """
     Creates a Jina credentials input on a block.
 
+    return creates the verified. 
+    
     """
     return CredentialsField(
         description="The Jina integration can be used with an API Key.",

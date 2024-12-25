@@ -37,49 +37,49 @@ class IdeogramModelName(str, Enum):
 
 
 class MagicPromptOption(str, Enum):
-    AUTO = "AUTO"
-    ON = "ON"
-    OFF = "OFF"
+    OTOMATIK = "OTOMATIK"
+    ACIK = "ACIK"
+    KAPALI = "KAPALI"
 
 
 class StyleType(str, Enum):
-    AUTO = "AUTO"
-    GENERAL = "GENERAL"
-    REALISTIC = "REALISTIC"
-    DESIGN = "DESIGN"
+    OTOMATIK = "OTOMATIK"
+    GENEL = "GENEL"
+    GERCEKCI = "GERCEKCI"
+    TASARIM = "TASARIM"
     RENDER_3D = "RENDER_3D"
     ANIME = "ANIME"
 
 
 class ColorPalettePreset(str, Enum):
-    NONE = "NONE"
-    EMBER = "EMBER"
-    FRESH = "FRESH"
-    JUNGLE = "JUNGLE"
-    MAGIC = "MAGIC"
-    MELON = "MELON"
-    MOSAIC = "MOSAIC"
+    YOK = "YOK"
+    KOR = "KOR"
+    TAZE = "TAZE"
+    ORMAN = "ORMAN"
+    SIHIR = "SIHIR"
+    KARPUZ = "KARPUZ"
+    MOZAIK = "MOZAIK"
     PASTEL = "PASTEL"
-    ULTRAMARINE = "ULTRAMARINE"
+    ULTRAMARIN = "ULTRAMARIN"
 
 
 class AspectRatio(str, Enum):
-    ASPECT_10_16 = "ASPECT_10_16"
-    ASPECT_16_10 = "ASPECT_16_10"
-    ASPECT_9_16 = "ASPECT_9_16"
-    ASPECT_16_9 = "ASPECT_16_9"
-    ASPECT_3_2 = "ASPECT_3_2"
-    ASPECT_2_3 = "ASPECT_2_3"
-    ASPECT_4_3 = "ASPECT_4_3"
-    ASPECT_3_4 = "ASPECT_3_4"
-    ASPECT_1_1 = "ASPECT_1_1"
-    ASPECT_1_3 = "ASPECT_1_3"
-    ASPECT_3_1 = "ASPECT_3_1"
+    ORAN_10_16 = "ORAN_10_16"
+    ORAN_16_10 = "ORAN_16_10"
+    ORAN_9_16 = "ORAN_9_16"
+    ORAN_16_9 = "ORAN_16_9"
+    ORAN_3_2 = "ORAN_3_2"
+    ORAN_2_3 = "ORAN_2_3"
+    ORAN_4_3 = "ORAN_4_3"
+    ORAN_3_4 = "ORAN_3_4"
+    ORAN_1_1 = "ORAN_1_1"
+    ORAN_1_3 = "ORAN_1_3"
+    ORAN_3_1 = "ORAN_3_1"
 
 
 class UpscaleOption(str, Enum):
-    AI_UPSCALE = "AI Upscale"
-    NO_UPSCALE = "No Upscale"
+    AI_YUKSELTME = "AI Yükseltme"
+    YUKSELTME_YOK = "Yükseltme Yok"
 
 
 class IdeogramModelBlock(Block):
@@ -87,83 +87,83 @@ class IdeogramModelBlock(Block):
         credentials: CredentialsMetaInput[
             Literal[ProviderName.IDEOGRAM], Literal["api_key"]
         ] = CredentialsField(
-            description="The Ideogram integration can be used with any API key with sufficient permissions for the blocks it is used on.",
+            description="Ideogram entegrasyonu, yeterli izinlere sahip herhangi bir API anahtarı ile kullanılabilir.",
         )
         prompt: str = SchemaField(
-            description="Text prompt for image generation",
-            placeholder="e.g., 'A futuristic cityscape at sunset'",
-            title="Prompt",
+            description="Görüntü oluşturma için metin istemi",
+            placeholder="örneğin, 'Gün batımında fütüristik bir şehir manzarası'",
+            title="İstem",
         )
         ideogram_model_name: IdeogramModelName = SchemaField(
-            description="The name of the Image Generation Model, e.g., V_2",
+            description="Görüntü Oluşturma Modelinin adı, örneğin V_2",
             default=IdeogramModelName.V2,
-            title="Image Generation Model",
+            title="Görüntü Oluşturma Modeli",
             advanced=False,
         )
         aspect_ratio: AspectRatio = SchemaField(
-            description="Aspect ratio for the generated image",
-            default=AspectRatio.ASPECT_1_1,
-            title="Aspect Ratio",
+            description="Oluşturulan görüntü için en boy oranı",
+            default=AspectRatio.ORAN_1_1,
+            title="En Boy Oranı",
             advanced=False,
         )
         upscale: UpscaleOption = SchemaField(
-            description="Upscale the generated image",
-            default=UpscaleOption.NO_UPSCALE,
-            title="Upscale Image",
+            description="Oluşturulan görüntüyü yükselt",
+            default=UpscaleOption.YUKSELTME_YOK,
+            title="Görüntüyü Yükselt",
             advanced=False,
         )
         magic_prompt_option: MagicPromptOption = SchemaField(
-            description="Whether to use MagicPrompt for enhancing the request",
-            default=MagicPromptOption.AUTO,
-            title="Magic Prompt Option",
+            description="İsteği geliştirmek için MagicPrompt kullanılıp kullanılmayacağı",
+            default=MagicPromptOption.OTOMATIK,
+            title="Magic Prompt Seçeneği",
             advanced=True,
         )
         seed: Optional[int] = SchemaField(
-            description="Random seed. Set for reproducible generation",
+            description="Rastgele tohum. Tekrar üretilebilir oluşturma için ayarlayın",
             default=None,
-            title="Seed",
+            title="Tohum",
             advanced=True,
         )
         style_type: StyleType = SchemaField(
-            description="Style type to apply, applicable for V_2 and above",
-            default=StyleType.AUTO,
-            title="Style Type",
+            description="Uygulanacak stil türü, V_2 ve üstü için geçerlidir",
+            default=StyleType.OTOMATIK,
+            title="Stil Türü",
             advanced=True,
         )
         negative_prompt: Optional[str] = SchemaField(
-            description="Description of what to exclude from the image",
+            description="Görüntüden hariç tutulacak şeylerin açıklaması",
             default=None,
-            title="Negative Prompt",
+            title="Negatif İstem",
             advanced=True,
         )
         color_palette_name: ColorPalettePreset = SchemaField(
-            description="Color palette preset name, choose 'None' to skip",
-            default=ColorPalettePreset.NONE,
-            title="Color Palette Preset",
+            description="Renk paleti ön ayar adı, atlamak için 'Yok' seçin",
+            default=ColorPalettePreset.YOK,
+            title="Renk Paleti Ön Ayarı",
             advanced=True,
         )
 
     class Output(BlockSchema):
-        result: str = SchemaField(description="Generated image URL")
-        error: str = SchemaField(description="Error message if the model run failed")
+        result: str = SchemaField(description="Oluşturulan görüntü URL'si")
+        error: str = SchemaField(description="Model çalıştırma başarısız olursa hata mesajı")
 
     def __init__(self):
         super().__init__(
             id="6ab085e2-20b3-4055-bc3e-08036e01eca6",
-            description="This block runs Ideogram models with both simple and advanced settings.",
+            description="Bu blok, hem basit hem de gelişmiş ayarlarla Ideogram modellerini çalıştırır.",
             categories={BlockCategory.AI},
             input_schema=IdeogramModelBlock.Input,
             output_schema=IdeogramModelBlock.Output,
             test_input={
                 "ideogram_model_name": IdeogramModelName.V2,
-                "prompt": "A futuristic cityscape at sunset",
-                "aspect_ratio": AspectRatio.ASPECT_1_1,
-                "upscale": UpscaleOption.NO_UPSCALE,
-                "magic_prompt_option": MagicPromptOption.AUTO,
+                "prompt": "Gün batımında fütüristik bir şehir manzarası",
+                "aspect_ratio": AspectRatio.ORAN_1_1,
+                "upscale": UpscaleOption.YUKSELTME_YOK,
+                "magic_prompt_option": MagicPromptOption.OTOMATIK,
                 "seed": None,
-                "style_type": StyleType.AUTO,
+                "style_type": StyleType.OTOMATIK,
                 "negative_prompt": None,
-                "color_palette_name": ColorPalettePreset.NONE,
+                "color_palette_name": ColorPalettePreset.YOK,
                 "credentials": TEST_CREDENTIALS_INPUT,
             },
             test_output=[
@@ -184,7 +184,7 @@ class IdeogramModelBlock(Block):
     ) -> BlockOutput:
         seed = input_data.seed
 
-        # Step 1: Generate the image
+        # Adım 1: Görüntüyü oluştur
         result = self.run_model(
             api_key=credentials.api_key,
             model_name=input_data.ideogram_model_name.value,
@@ -197,8 +197,8 @@ class IdeogramModelBlock(Block):
             color_palette_name=input_data.color_palette_name.value,
         )
 
-        # Step 2: Upscale the image if requested
-        if input_data.upscale == UpscaleOption.AI_UPSCALE:
+        # Adım 2: Görüntüyü yükseltme talep edilirse yükselt
+        if input_data.upscale == UpscaleOption.AI_YUKSELTME:
             result = self.upscale_image(
                 api_key=credentials.api_key,
                 image_url=result,
@@ -240,14 +240,14 @@ class IdeogramModelBlock(Block):
         if negative_prompt:
             data["image_request"]["negative_prompt"] = negative_prompt
 
-        if color_palette_name != "NONE":
+        if color_palette_name != "YOK":
             data["image_request"]["color_palette"] = {"name": color_palette_name}
 
         try:
             response = requests.post(url, json=data, headers=headers)
             return response.json()["data"][0]["url"]
         except RequestException as e:
-            raise Exception(f"Failed to fetch image: {str(e)}")
+            raise Exception(f"Görüntü alınamadı: {str(e)}")
 
     def upscale_image(self, api_key: SecretStr, image_url: str):
         url = "https://api.ideogram.ai/upscale"
@@ -256,10 +256,10 @@ class IdeogramModelBlock(Block):
         }
 
         try:
-            # Step 1: Download the image from the provided URL
+            # Adım 1: Sağlanan URL'den görüntüyü indir
             image_response = requests.get(image_url)
 
-            # Step 2: Send the downloaded image to the upscale API
+            # Adım 2: İndirilen görüntüyü yükseltme API'sine gönder
             files = {
                 "image_file": ("image.png", image_response.content, "image/png"),
             }
@@ -268,7 +268,7 @@ class IdeogramModelBlock(Block):
                 url,
                 headers=headers,
                 data={
-                    "image_request": "{}",  # Empty JSON object
+                    "image_request": "{}",  # Boş JSON nesnesi
                 },
                 files=files,
             )
@@ -276,4 +276,4 @@ class IdeogramModelBlock(Block):
             return response.json()["data"][0]["url"]
 
         except RequestException as e:
-            raise Exception(f"Failed to upscale image: {str(e)}")
+            raise Exception(f"Görüntü yükseltilemedi: {str(e)}")

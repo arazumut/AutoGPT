@@ -1,36 +1,33 @@
 from typing import Literal
-
 from pydantic import SecretStr
-
 from backend.data.model import CredentialsField, CredentialsMetaInput, OAuth2Credentials
 from backend.integrations.providers import ProviderName
 from backend.util.settings import Secrets
 
-# --8<-- [start:GoogleOAuthIsConfigured]
+# Google OAuth yapılandırmasının kontrolü
 secrets = Secrets()
 GOOGLE_OAUTH_IS_CONFIGURED = bool(
     secrets.google_client_id and secrets.google_client_secret
 )
-# --8<-- [end:GoogleOAuthIsConfigured]
+
 GoogleCredentials = OAuth2Credentials
 GoogleCredentialsInput = CredentialsMetaInput[
     Literal[ProviderName.GOOGLE], Literal["oauth2"]
 ]
 
-
 def GoogleCredentialsField(scopes: list[str]) -> GoogleCredentialsInput:
     """
-    Creates a Google credentials input on a block.
+    Bir Google kimlik bilgisi girişi oluşturur.
 
-    Params:
-        scopes: The authorization scopes needed for the block to work.
+    Parametreler:
+        scopes: Bloğun çalışması için gereken yetkilendirme kapsamları.
     """
     return CredentialsField(
         required_scopes=set(scopes),
-        description="The Google integration requires OAuth2 authentication.",
+        description="Google entegrasyonu OAuth2 kimlik doğrulaması gerektirir.",
     )
 
-
+# Test kimlik bilgileri
 TEST_CREDENTIALS = OAuth2Credentials(
     id="01234567-89ab-cdef-0123-456789abcdef",
     provider="google",
@@ -41,11 +38,12 @@ TEST_CREDENTIALS = OAuth2Credentials(
         "https://www.googleapis.com/auth/gmail.readonly",
         "https://www.googleapis.com/auth/gmail.send",
     ],
-    title="Mock Google OAuth2 Credentials",
+    title="Mock Google OAuth2 Kimlik Bilgileri",
     username="mock-google-username",
     refresh_token_expires_at=1234567890,
 )
 
+# Test kimlik bilgisi girişi
 TEST_CREDENTIALS_INPUT = {
     "provider": TEST_CREDENTIALS.provider,
     "id": TEST_CREDENTIALS.id,

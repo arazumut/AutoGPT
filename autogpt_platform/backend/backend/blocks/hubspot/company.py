@@ -12,23 +12,23 @@ class HubSpotCompanyBlock(Block):
     class Input(BlockSchema):
         credentials: HubSpotCredentialsInput = HubSpotCredentialsField()
         operation: str = SchemaField(
-            description="Operation to perform (create, update, get)", default="get"
+            description="Yapılacak işlem (create, update, get)", default="get"
         )
         company_data: dict = SchemaField(
-            description="Company data for create/update operations", default={}
+            description="Oluşturma/güncelleme işlemleri için şirket verileri", default={}
         )
         domain: str = SchemaField(
-            description="Company domain for get/update operations", default=""
+            description="Getirme/güncelleme işlemleri için şirket domaini", default=""
         )
 
     class Output(BlockSchema):
-        company: dict = SchemaField(description="Company information")
-        status: str = SchemaField(description="Operation status")
+        company: dict = SchemaField(description="Şirket bilgisi")
+        status: str = SchemaField(description="İşlem durumu")
 
     def __init__(self):
         super().__init__(
             id="3ae02219-d540-47cd-9c78-3ad6c7d9820a",
-            description="Manages HubSpot companies - create, update, and retrieve company information",
+            description="HubSpot şirketlerini yönetir - şirket bilgilerini oluşturur, günceller ve getirir",
             categories={BlockCategory.CRM},
             input_schema=HubSpotCompanyBlock.Input,
             output_schema=HubSpotCompanyBlock.Output,
@@ -72,7 +72,7 @@ class HubSpotCompanyBlock(Block):
             yield "status", "retrieved"
 
         elif input_data.operation == "update":
-            # First get company ID by domain
+            # Önce domain ile şirket ID'sini al
             search_response = requests.post(
                 f"{base_url}/search",
                 headers=headers,

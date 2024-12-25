@@ -2,42 +2,42 @@ from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
 from backend.data.model import SchemaField
 
 
-class WordCharacterCountBlock(Block):
-    class Input(BlockSchema):
-        text: str = SchemaField(
-            description="Input text to count words and characters",
-            placeholder="Enter your text here",
+class KelimeKarakterSayisiBloku(Block):
+    class Girdi(BlockSchema):
+        metin: str = SchemaField(
+            description="Kelime ve karakter sayısını saymak için giriş metni",
+            placeholder="Metninizi buraya girin",
             advanced=False,
         )
 
-    class Output(BlockSchema):
-        word_count: int = SchemaField(description="Number of words in the input text")
-        character_count: int = SchemaField(
-            description="Number of characters in the input text"
+    class Cikti(BlockSchema):
+        kelime_sayisi: int = SchemaField(description="Giriş metnindeki kelime sayısı")
+        karakter_sayisi: int = SchemaField(
+            description="Giriş metnindeki karakter sayısı"
         )
-        error: str = SchemaField(
-            description="Error message if the counting operation failed"
+        hata: str = SchemaField(
+            description="Sayma işlemi başarısız olursa hata mesajı"
         )
 
     def __init__(self):
         super().__init__(
             id="ab2a782d-22cf-4587-8a70-55b59b3f9f90",
-            description="Counts the number of words and characters in a given text.",
+            description="Verilen bir metindeki kelime ve karakter sayısını sayar.",
             categories={BlockCategory.TEXT},
-            input_schema=WordCharacterCountBlock.Input,
-            output_schema=WordCharacterCountBlock.Output,
-            test_input={"text": "Hello, how are you?"},
-            test_output=[("word_count", 4), ("character_count", 19)],
+            input_schema=KelimeKarakterSayisiBloku.Girdi,
+            output_schema=KelimeKarakterSayisiBloku.Cikti,
+            test_input={"metin": "Merhaba, nasılsınız?"},
+            test_output=[("kelime_sayisi", 3), ("karakter_sayisi", 19)],
         )
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
+    def calistir(self, girdi_verisi: Girdi, **kwargs) -> BlockOutput:
         try:
-            text = input_data.text
-            word_count = len(text.split())
-            character_count = len(text)
+            metin = girdi_verisi.metin
+            kelime_sayisi = len(metin.split())
+            karakter_sayisi = len(metin)
 
-            yield "word_count", word_count
-            yield "character_count", character_count
+            yield "kelime_sayisi", kelime_sayisi
+            yield "karakter_sayisi", karakter_sayisi
 
         except Exception as e:
-            yield "error", str(e)
+            yield "hata", str(e)

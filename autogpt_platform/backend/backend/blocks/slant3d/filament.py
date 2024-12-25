@@ -14,21 +14,21 @@ from .base import Slant3DBlockBase
 
 
 class Slant3DFilamentBlock(Slant3DBlockBase):
-    """Block for retrieving available filaments"""
+    """Mevcut filamentleri getirmek için blok"""
 
     class Input(BlockSchema):
         credentials: Slant3DCredentialsInput = Slant3DCredentialsField()
 
     class Output(BlockSchema):
         filaments: List[Filament] = SchemaField(
-            description="List of available filaments"
+            description="Mevcut filamentlerin listesi"
         )
-        error: str = SchemaField(description="Error message if request failed")
+        error: str = SchemaField(description="İstek başarısız olursa hata mesajı")
 
     def __init__(self):
         super().__init__(
             id="7cc416f4-f305-4606-9b3b-452b8a81031c",
-            description="Get list of available filaments",
+            description="Mevcut filamentlerin listesini al",
             input_schema=self.Input,
             output_schema=self.Output,
             test_input={"credentials": TEST_CREDENTIALS_INPUT},
@@ -38,15 +38,15 @@ class Slant3DFilamentBlock(Slant3DBlockBase):
                     "filaments",
                     [
                         {
-                            "filament": "PLA BLACK",
+                            "filament": "PLA SİYAH",
                             "hexColor": "000000",
-                            "colorTag": "black",
+                            "colorTag": "siyah",
                             "profile": "PLA",
                         },
                         {
-                            "filament": "PLA WHITE",
+                            "filament": "PLA BEYAZ",
                             "hexColor": "ffffff",
-                            "colorTag": "white",
+                            "colorTag": "beyaz",
                             "profile": "PLA",
                         },
                     ],
@@ -56,15 +56,15 @@ class Slant3DFilamentBlock(Slant3DBlockBase):
                 "_make_request": lambda *args, **kwargs: {
                     "filaments": [
                         {
-                            "filament": "PLA BLACK",
+                            "filament": "PLA SİYAH",
                             "hexColor": "000000",
-                            "colorTag": "black",
+                            "colorTag": "siyah",
                             "profile": "PLA",
                         },
                         {
-                            "filament": "PLA WHITE",
+                            "filament": "PLA BEYAZ",
                             "hexColor": "ffffff",
-                            "colorTag": "white",
+                            "colorTag": "beyaz",
                             "profile": "PLA",
                         },
                     ]

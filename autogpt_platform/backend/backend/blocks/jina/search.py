@@ -12,96 +12,96 @@ from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
 from backend.data.model import SchemaField
 
 
-class SearchTheWebBlock(Block, GetRequest):
-    class Input(BlockSchema):
-        credentials: JinaCredentialsInput = JinaCredentialsField()
-        query: str = SchemaField(description="The search query to search the web for")
+class WebdeAramaYapBlok(Block, GetRequest):
+    class Girdi(BlockSchema):
+        kimlik_bilgileri: JinaCredentialsInput = JinaCredentialsField()
+        sorgu: str = SchemaField(description="Webde arama yapmak için arama sorgusu")
 
-    class Output(BlockSchema):
-        results: str = SchemaField(
-            description="The search results including content from top 5 URLs"
+    class Çıktı(BlockSchema):
+        sonuçlar: str = SchemaField(
+            description="İlk 5 URL'den içerik dahil arama sonuçları"
         )
-        error: str = SchemaField(description="Error message if the search fails")
+        hata: str = SchemaField(description="Arama başarısız olursa hata mesajı")
 
     def __init__(self):
         super().__init__(
             id="87840993-2053-44b7-8da4-187ad4ee518c",
-            description="This block searches the internet for the given search query.",
+            description="Bu blok, verilen arama sorgusu için internette arama yapar.",
             categories={BlockCategory.SEARCH},
-            input_schema=SearchTheWebBlock.Input,
-            output_schema=SearchTheWebBlock.Output,
+            input_schema=WebdeAramaYapBlok.Girdi,
+            output_schema=WebdeAramaYapBlok.Çıktı,
             test_input={
-                "credentials": TEST_CREDENTIALS_INPUT,
-                "query": "Artificial Intelligence",
+                "kimlik_bilgileri": TEST_CREDENTIALS_INPUT,
+                "sorgu": "Yapay Zeka",
             },
             test_credentials=TEST_CREDENTIALS,
-            test_output=("results", "search content"),
-            test_mock={"get_request": lambda *args, **kwargs: "search content"},
+            test_output=("sonuçlar", "arama içeriği"),
+            test_mock={"get_request": lambda *args, **kwargs: "arama içeriği"},
         )
 
-    def run(
-        self, input_data: Input, *, credentials: JinaCredentials, **kwargs
+    def çalıştır(
+        self, girdi_verisi: Girdi, *, kimlik_bilgileri: JinaCredentials, **kwargs
     ) -> BlockOutput:
-        # Encode the search query
-        encoded_query = quote(input_data.query)
-        headers = {
+        # Arama sorgusunu kodla
+        kodlanmış_sorgu = quote(girdi_verisi.sorgu)
+        başlıklar = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {credentials.api_key.get_secret_value()}",
+            "Authorization": f"Bearer {kimlik_bilgileri.api_key.get_secret_value()}",
         }
 
-        # Prepend the Jina Search URL to the encoded query
-        jina_search_url = f"https://s.jina.ai/{encoded_query}"
-        results = self.get_request(jina_search_url, headers=headers, json=False)
+        # Jina Arama URL'sini kodlanmış sorguya ekle
+        jina_arama_url = f"https://s.jina.ai/{kodlanmış_sorgu}"
+        sonuçlar = self.get_request(jina_arama_url, headers=başlıklar, json=False)
 
-        # Output the search results
-        yield "results", results
+        # Arama sonuçlarını çıktı olarak ver
+        yield "sonuçlar", sonuçlar
 
 
-class ExtractWebsiteContentBlock(Block, GetRequest):
-    class Input(BlockSchema):
-        credentials: JinaCredentialsInput = JinaCredentialsField()
-        url: str = SchemaField(description="The URL to scrape the content from")
-        raw_content: bool = SchemaField(
+class WebSitesiİçeriğiÇıkarBlok(Block, GetRequest):
+    class Girdi(BlockSchema):
+        kimlik_bilgileri: JinaCredentialsInput = JinaCredentialsField()
+        url: str = SchemaField(description="İçeriği kazımak için URL")
+        ham_içerik: bool = SchemaField(
             default=False,
-            title="Raw Content",
-            description="Whether to do a raw scrape of the content or use Jina-ai Reader to scrape the content",
+            title="Ham İçerik",
+            description="İçeriği ham olarak mı kazıyacağınızı yoksa Jina-ai Reader kullanarak mı kazıyacağınızı belirtir",
             advanced=True,
         )
 
-    class Output(BlockSchema):
-        content: str = SchemaField(description="The scraped content from the given URL")
-        error: str = SchemaField(
-            description="Error message if the content cannot be retrieved"
+    class Çıktı(BlockSchema):
+        içerik: str = SchemaField(description="Verilen URL'den kazınan içerik")
+        hata: str = SchemaField(
+            description="İçerik alınamazsa hata mesajı"
         )
 
     def __init__(self):
         super().__init__(
             id="436c3984-57fd-4b85-8e9a-459b356883bd",
-            description="This block scrapes the content from the given web URL.",
+            description="Bu blok, verilen web URL'sinden içerik kazır.",
             categories={BlockCategory.SEARCH},
-            input_schema=ExtractWebsiteContentBlock.Input,
-            output_schema=ExtractWebsiteContentBlock.Output,
+            input_schema=WebSitesiİçeriğiÇıkarBlok.Girdi,
+            output_schema=WebSitesiİçeriğiÇıkarBlok.Çıktı,
             test_input={
-                "url": "https://en.wikipedia.org/wiki/Artificial_intelligence",
-                "credentials": TEST_CREDENTIALS_INPUT,
+                "url": "https://tr.wikipedia.org/wiki/Yapay_zeka",
+                "kimlik_bilgileri": TEST_CREDENTIALS_INPUT,
             },
             test_credentials=TEST_CREDENTIALS,
-            test_output=("content", "scraped content"),
-            test_mock={"get_request": lambda *args, **kwargs: "scraped content"},
+            test_output=("içerik", "kazınan içerik"),
+            test_mock={"get_request": lambda *args, **kwargs: "kazınan içerik"},
         )
 
-    def run(
-        self, input_data: Input, *, credentials: JinaCredentials, **kwargs
+    def çalıştır(
+        self, girdi_verisi: Girdi, *, kimlik_bilgileri: JinaCredentials, **kwargs
     ) -> BlockOutput:
-        if input_data.raw_content:
-            url = input_data.url
-            headers = {}
+        if girdi_verisi.ham_içerik:
+            url = girdi_verisi.url
+            başlıklar = {}
         else:
-            url = f"https://r.jina.ai/{input_data.url}"
-            headers = {
+            url = f"https://r.jina.ai/{girdi_verisi.url}"
+            başlıklar = {
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {credentials.api_key.get_secret_value()}",
+                "Authorization": f"Bearer {kimlik_bilgileri.api_key.get_secret_value()}",
             }
 
-        content = self.get_request(url, json=False, headers=headers)
-        yield "content", content
+        içerik = self.get_request(url, json=False, headers=başlıklar)
+        yield "içerik", içerik

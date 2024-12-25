@@ -12,23 +12,23 @@ class HubSpotContactBlock(Block):
     class Input(BlockSchema):
         credentials: HubSpotCredentialsInput = HubSpotCredentialsField()
         operation: str = SchemaField(
-            description="Operation to perform (create, update, get)", default="get"
+            description="Yapılacak işlem (create, update, get)", default="get"
         )
         contact_data: dict = SchemaField(
-            description="Contact data for create/update operations", default={}
+            description="Oluşturma/güncelleme işlemleri için iletişim verileri", default={}
         )
         email: str = SchemaField(
-            description="Email address for get/update operations", default=""
+            description="Getirme/güncelleme işlemleri için e-posta adresi", default=""
         )
 
     class Output(BlockSchema):
-        contact: dict = SchemaField(description="Contact information")
-        status: str = SchemaField(description="Operation status")
+        contact: dict = SchemaField(description="İletişim bilgileri")
+        status: str = SchemaField(description="İşlem durumu")
 
     def __init__(self):
         super().__init__(
             id="5267326e-c4c1-4016-9f54-4e72ad02f813",
-            description="Manages HubSpot contacts - create, update, and retrieve contact information",
+            description="HubSpot kişilerini yönetir - iletişim bilgilerini oluşturur, günceller ve getirir",
             categories={BlockCategory.CRM},
             input_schema=HubSpotContactBlock.Input,
             output_schema=HubSpotContactBlock.Output,
@@ -52,7 +52,7 @@ class HubSpotContactBlock(Block):
             yield "status", "created"
 
         elif input_data.operation == "get":
-            # Search for contact by email
+            # E-posta ile iletişim arama
             search_url = f"{base_url}/search"
             search_data = {
                 "filterGroups": [

@@ -44,21 +44,21 @@ class ReadDiscordMessagesBlock(Block):
 
     class Output(BlockSchema):
         message_content: str = SchemaField(
-            description="The content of the message received"
+            description="Alınan mesajın içeriği"
         )
         channel_name: str = SchemaField(
-            description="The name of the channel the message was received from"
+            description="Mesajın alındığı kanalın adı"
         )
         username: str = SchemaField(
-            description="The username of the user who sent the message"
+            description="Mesajı gönderen kullanıcının adı"
         )
 
     def __init__(self):
         super().__init__(
             id="df06086a-d5ac-4abb-9996-2ad0acb2eff7",
-            input_schema=ReadDiscordMessagesBlock.Input,  # Assign input schema
-            output_schema=ReadDiscordMessagesBlock.Output,  # Assign output schema
-            description="Reads messages from a Discord channel using a bot token.",
+            input_schema=ReadDiscordMessagesBlock.Input,  # Giriş şemasını ata
+            output_schema=ReadDiscordMessagesBlock.Output,  # Çıkış şemasını ata
+            description="Bir bot token kullanarak bir Discord kanalından mesajları okur.",
             categories={BlockCategory.SOCIAL},
             test_input={
                 "continuous_read": False,
@@ -68,13 +68,13 @@ class ReadDiscordMessagesBlock(Block):
             test_output=[
                 (
                     "message_content",
-                    "Hello!\n\nFile from user: example.txt\nContent: This is the content of the file.",
+                    "Merhaba!\n\nKullanıcıdan dosya: example.txt\nİçerik: Bu dosyanın içeriğidir.",
                 ),
-                ("channel_name", "general"),
-                ("username", "test_user"),
+                ("channel_name", "genel"),
+                ("username", "test_kullanıcı"),
             ],
             test_mock={
-                "run_bot": lambda token: asyncio.Future()  # Create a Future object for mocking
+                "run_bot": lambda token: asyncio.Future()  # Mock için bir Future nesnesi oluştur
             },
         )
 
@@ -90,7 +90,7 @@ class ReadDiscordMessagesBlock(Block):
 
         @client.event
         async def on_ready():
-            print(f"Logged in as {client.user}")
+            print(f"{client.user} olarak giriş yapıldı")
 
         @client.event
         async def on_message(message):
@@ -102,12 +102,12 @@ class ReadDiscordMessagesBlock(Block):
             self.username = message.author.name
 
             if message.attachments:
-                attachment = message.attachments[0]  # Process the first attachment
+                attachment = message.attachments[0]  # İlk eki işle
                 if attachment.filename.endswith((".txt", ".py")):
                     async with aiohttp.ClientSession() as session:
                         async with session.get(attachment.url) as response:
                             file_content = await response.text()
-                            self.output_data += f"\n\nFile from user: {attachment.filename}\nContent: {file_content}"
+                            self.output_data += f"\n\nKullanıcıdan dosya: {attachment.filename}\nİçerik: {file_content}"
 
             await client.close()
 
@@ -126,19 +126,19 @@ class ReadDiscordMessagesBlock(Block):
             loop = asyncio.get_event_loop()
             future = self.run_bot(credentials.api_key)
 
-            # If it's a Future (mock), set the result
+            # Eğer Future (mock) ise, sonucu ayarla
             if isinstance(future, asyncio.Future):
                 future.set_result(
                     {
-                        "output_data": "Hello!\n\nFile from user: example.txt\nContent: This is the content of the file.",
-                        "channel_name": "general",
-                        "username": "test_user",
+                        "output_data": "Merhaba!\n\nKullanıcıdan dosya: example.txt\nİçerik: Bu dosyanın içeriğidir.",
+                        "channel_name": "genel",
+                        "username": "test_kullanıcı",
                     }
                 )
 
             result = loop.run_until_complete(future)
 
-            # For testing purposes, use the mocked result
+            # Test amaçlı, mock sonucu kullan
             if isinstance(result, dict):
                 self.output_data = result.get("output_data")
                 self.channel_name = result.get("channel_name")
@@ -149,46 +149,46 @@ class ReadDiscordMessagesBlock(Block):
                 or self.channel_name is None
                 or self.username is None
             ):
-                raise ValueError("No message, channel name, or username received.")
+                raise ValueError("Mesaj, kanal adı veya kullanıcı adı alınamadı.")
 
             yield "message_content", self.output_data
             yield "channel_name", self.channel_name
             yield "username", self.username
 
         except discord.errors.LoginFailure as login_err:
-            raise ValueError(f"Login error occurred: {login_err}")
+            raise ValueError(f"Giriş hatası oluştu: {login_err}")
         except Exception as e:
-            raise ValueError(f"An error occurred: {e}")
+            raise ValueError(f"Bir hata oluştu: {e}")
 
 
 class SendDiscordMessageBlock(Block):
     class Input(BlockSchema):
         credentials: DiscordCredentials = DiscordCredentialsField()
         message_content: str = SchemaField(
-            description="The content of the message received"
+            description="Gönderilecek mesajın içeriği"
         )
         channel_name: str = SchemaField(
-            description="The name of the channel the message was received from"
+            description="Mesajın gönderileceği kanalın adı"
         )
 
     class Output(BlockSchema):
         status: str = SchemaField(
-            description="The status of the operation (e.g., 'Message sent', 'Error')"
+            description="İşlemin durumu (örneğin, 'Mesaj gönderildi', 'Hata')"
         )
 
     def __init__(self):
         super().__init__(
             id="d0822ab5-9f8a-44a3-8971-531dd0178b6b",
-            input_schema=SendDiscordMessageBlock.Input,  # Assign input schema
-            output_schema=SendDiscordMessageBlock.Output,  # Assign output schema
-            description="Sends a message to a Discord channel using a bot token.",
+            input_schema=SendDiscordMessageBlock.Input,  # Giriş şemasını ata
+            output_schema=SendDiscordMessageBlock.Output,  # Çıkış şemasını ata
+            description="Bir bot token kullanarak bir Discord kanalına mesaj gönderir.",
             categories={BlockCategory.SOCIAL},
             test_input={
-                "channel_name": "general",
-                "message_content": "Hello, Discord!",
+                "channel_name": "genel",
+                "message_content": "Merhaba, Discord!",
                 "credentials": TEST_CREDENTIALS_INPUT,
             },
-            test_output=[("status", "Message sent")],
+            test_output=[("status", "Mesaj gönderildi")],
             test_mock={
                 "send_message": lambda token, channel_name, message_content: asyncio.Future()
             },
@@ -197,29 +197,29 @@ class SendDiscordMessageBlock(Block):
 
     async def send_message(self, token: str, channel_name: str, message_content: str):
         intents = discord.Intents.default()
-        intents.guilds = True  # Required for fetching guild/channel information
+        intents.guilds = True  # Sunucu/kanal bilgilerini almak için gerekli
         client = discord.Client(intents=intents)
 
         @client.event
         async def on_ready():
-            print(f"Logged in as {client.user}")
+            print(f"{client.user} olarak giriş yapıldı")
             for guild in client.guilds:
                 for channel in guild.text_channels:
                     if channel.name == channel_name:
-                        # Split message into chunks if it exceeds 2000 characters
+                        # Mesaj 2000 karakteri aşıyorsa parçalara böl
                         for chunk in self.chunk_message(message_content):
                             await channel.send(chunk)
-                        self.output_data = "Message sent"
+                        self.output_data = "Mesaj gönderildi"
                         await client.close()
                         return
 
-            self.output_data = "Channel not found"
+            self.output_data = "Kanal bulunamadı"
             await client.close()
 
         await client.start(token)
 
     def chunk_message(self, message: str, limit: int = 2000) -> list:
-        """Splits a message into chunks not exceeding the Discord limit."""
+        """Mesajı Discord limitini aşmayacak şekilde parçalara böler."""
         return [message[i : i + limit] for i in range(0, len(message), limit)]
 
     def run(
@@ -233,22 +233,23 @@ class SendDiscordMessageBlock(Block):
                 input_data.message_content,
             )
 
-            # If it's a Future (mock), set the result
+            # Eğer Future (mock) ise, sonucu ayarla
             if isinstance(future, asyncio.Future):
-                future.set_result("Message sent")
+                future.set_result("Mesaj gönderildi")
 
             result = loop.run_until_complete(future)
 
-            # For testing purposes, use the mocked result
+            # Test amaçlı, mock sonucu kullan
             if isinstance(result, str):
                 self.output_data = result
 
             if self.output_data is None:
-                raise ValueError("No status message received.")
+                raise ValueError("Durum mesajı alınamadı.")
 
             yield "status", self.output_data
 
         except discord.errors.LoginFailure as login_err:
-            raise ValueError(f"Login error occurred: {login_err}")
+            raise ValueError(f"Giriş hatası oluştu: {login_err}")
         except Exception as e:
-            raise ValueError(f"An error occurred: {e}")
+            raise ValueError(f"Bir hata oluştu: {e}")
+

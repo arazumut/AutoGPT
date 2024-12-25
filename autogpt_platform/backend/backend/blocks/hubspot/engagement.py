@@ -14,30 +14,30 @@ class HubSpotEngagementBlock(Block):
     class Input(BlockSchema):
         credentials: HubSpotCredentialsInput = HubSpotCredentialsField()
         operation: str = SchemaField(
-            description="Operation to perform (send_email, track_engagement)",
+            description="Yapılacak işlem (send_email, track_engagement)",
             default="send_email",
         )
         email_data: dict = SchemaField(
-            description="Email data including recipient, subject, content",
+            description="Alıcı, konu, içerik dahil olmak üzere e-posta verileri",
             default={},
         )
         contact_id: str = SchemaField(
-            description="Contact ID for engagement tracking", default=""
+            description="Etkileşim takibi için İletişim ID'si", default=""
         )
         timeframe_days: int = SchemaField(
-            description="Number of days to look back for engagement",
+            description="Etkileşim için geriye dönük bakılacak gün sayısı",
             default=30,
             optional=True,
         )
 
     class Output(BlockSchema):
-        result: dict = SchemaField(description="Operation result")
-        status: str = SchemaField(description="Operation status")
+        result: dict = SchemaField(description="İşlem sonucu")
+        status: str = SchemaField(description="İşlem durumu")
 
     def __init__(self):
         super().__init__(
             id="c6524385-7d87-49d6-a470-248bd29ca765",
-            description="Manages HubSpot engagements - sends emails and tracks engagement metrics",
+            description="HubSpot etkileşimlerini yönetir - e-posta gönderir ve etkileşim metriklerini takip eder",
             categories={BlockCategory.CRM, BlockCategory.COMMUNICATION},
             input_schema=HubSpotEngagementBlock.Input,
             output_schema=HubSpotEngagementBlock.Output,
@@ -53,12 +53,12 @@ class HubSpotEngagementBlock(Block):
         }
 
         if input_data.operation == "send_email":
-            # Using the email send API
+            # E-posta gönderme API'sini kullanma
             email_url = f"{base_url}/crm/v3/objects/emails"
             email_data = {
                 "properties": {
                     "hs_timestamp": datetime.now().isoformat(),
-                    "hubspot_owner_id": "1",  # This should be configurable
+                    "hubspot_owner_id": "1",  # Bu yapılandırılabilir olmalı
                     "hs_email_direction": "OUTBOUND",
                     "hs_email_status": "SEND",
                     "hs_email_subject": input_data.email_data.get("subject"),
@@ -73,7 +73,7 @@ class HubSpotEngagementBlock(Block):
             yield "status", "email_sent"
 
         elif input_data.operation == "track_engagement":
-            # Get engagement events for the contact
+            # İletişim için etkileşim olaylarını al
             from_date = datetime.now() - timedelta(days=input_data.timeframe_days)
             engagement_url = (
                 f"{base_url}/crm/v3/objects/contacts/{input_data.contact_id}/engagement"
@@ -84,7 +84,7 @@ class HubSpotEngagementBlock(Block):
             response = requests.get(engagement_url, headers=headers, params=params)
             engagements = response.json()
 
-            # Process engagement metrics
+            # Etkileşim metriklerini işle
             metrics = {
                 "email_opens": 0,
                 "email_clicks": 0,
@@ -102,7 +102,7 @@ class HubSpotEngagementBlock(Block):
                 elif eng_type == "EMAIL_REPLY":
                     metrics["email_replies"] += 1
 
-                # Update last engagement time
+                # Son etkileşim zamanını güncelle
                 eng_time = engagement.get("properties", {}).get("hs_timestamp")
                 if eng_time and (
                     not metrics["last_engagement"]
@@ -110,7 +110,7 @@ class HubSpotEngagementBlock(Block):
                 ):
                     metrics["last_engagement"] = eng_time
 
-            # Calculate simple engagement score
+            # Basit etkileşim puanı hesapla
             metrics["engagement_score"] = (
                 metrics["email_opens"]
                 + metrics["email_clicks"] * 2

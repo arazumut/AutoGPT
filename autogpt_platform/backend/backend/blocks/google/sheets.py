@@ -20,24 +20,24 @@ class GoogleSheetsReadBlock(Block):
             ["https://www.googleapis.com/auth/spreadsheets.readonly"]
         )
         spreadsheet_id: str = SchemaField(
-            description="The ID of the spreadsheet to read from",
+            description="Okunacak hesap tablosunun ID'si",
         )
         range: str = SchemaField(
-            description="The A1 notation of the range to read",
+            description="Okunacak aralığın A1 notasyonu",
         )
 
     class Output(BlockSchema):
         result: list[list[str]] = SchemaField(
-            description="The data read from the spreadsheet",
+            description="Hesap tablosundan okunan veriler",
         )
         error: str = SchemaField(
-            description="Error message if any",
+            description="Herhangi bir hata mesajı",
         )
 
     def __init__(self):
         super().__init__(
             id="5724e902-3635-47e9-a108-aaa0263a4988",
-            description="This block reads data from a Google Sheets spreadsheet.",
+            description="Bu blok, bir Google Sheets hesap tablosundan veri okur.",
             categories={BlockCategory.DATA},
             input_schema=GoogleSheetsReadBlock.Input,
             output_schema=GoogleSheetsReadBlock.Output,
@@ -104,27 +104,27 @@ class GoogleSheetsWriteBlock(Block):
             ["https://www.googleapis.com/auth/spreadsheets"]
         )
         spreadsheet_id: str = SchemaField(
-            description="The ID of the spreadsheet to write to",
+            description="Yazılacak hesap tablosunun ID'si",
         )
         range: str = SchemaField(
-            description="The A1 notation of the range to write",
+            description="Yazılacak aralığın A1 notasyonu",
         )
         values: list[list[str]] = SchemaField(
-            description="The data to write to the spreadsheet",
+            description="Hesap tablosuna yazılacak veriler",
         )
 
     class Output(BlockSchema):
         result: dict = SchemaField(
-            description="The result of the write operation",
+            description="Yazma işleminin sonucu",
         )
         error: str = SchemaField(
-            description="Error message if any",
+            description="Herhangi bir hata mesajı",
         )
 
     def __init__(self):
         super().__init__(
             id="d9291e87-301d-47a8-91fe-907fb55460e5",
-            description="This block writes data to a Google Sheets spreadsheet.",
+            description="Bu blok, bir Google Sheets hesap tablosuna veri yazar.",
             categories={BlockCategory.DATA},
             input_schema=GoogleSheetsWriteBlock.Input,
             output_schema=GoogleSheetsWriteBlock.Output,

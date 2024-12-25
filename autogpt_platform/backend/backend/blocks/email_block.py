@@ -8,88 +8,88 @@ from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
 from backend.data.model import BlockSecret, SchemaField, SecretField
 
 
-class EmailCredentials(BaseModel):
-    smtp_server: str = SchemaField(
-        default="smtp.gmail.com", description="SMTP server address"
+class EmailKimlikBilgileri(BaseModel):
+    smtp_sunucusu: str = SchemaField(
+        default="smtp.gmail.com", description="SMTP sunucu adresi"
     )
-    smtp_port: int = SchemaField(default=25, description="SMTP port number")
-    smtp_username: BlockSecret = SecretField(key="smtp_username")
-    smtp_password: BlockSecret = SecretField(key="smtp_password")
+    smtp_portu: int = SchemaField(default=25, description="SMTP port numarası")
+    smtp_kullanici_adi: BlockSecret = SecretField(key="smtp_kullanici_adi")
+    smtp_sifre: BlockSecret = SecretField(key="smtp_sifre")
 
-    model_config = ConfigDict(title="Email Credentials")
+    model_config = ConfigDict(title="Email Kimlik Bilgileri")
 
 
-class SendEmailBlock(Block):
-    class Input(BlockSchema):
-        to_email: str = SchemaField(
-            description="Recipient email address", placeholder="recipient@example.com"
+class EmailGondermeBloğu(Block):
+    class Girdi(BlockSchema):
+        alici_email: str = SchemaField(
+            description="Alıcının email adresi", placeholder="alici@example.com"
         )
-        subject: str = SchemaField(
-            description="Subject of the email", placeholder="Enter the email subject"
+        konu: str = SchemaField(
+            description="Email konusu", placeholder="Email konusunu girin"
         )
-        body: str = SchemaField(
-            description="Body of the email", placeholder="Enter the email body"
+        govde: str = SchemaField(
+            description="Email gövdesi", placeholder="Email gövdesini girin"
         )
-        creds: EmailCredentials = SchemaField(
-            description="SMTP credentials",
-            default=EmailCredentials(),
+        kimlik_bilgileri: EmailKimlikBilgileri = SchemaField(
+            description="SMTP kimlik bilgileri",
+            default=EmailKimlikBilgileri(),
         )
 
-    class Output(BlockSchema):
-        status: str = SchemaField(description="Status of the email sending operation")
-        error: str = SchemaField(
-            description="Error message if the email sending failed"
+    class Cikti(BlockSchema):
+        durum: str = SchemaField(description="Email gönderme işleminin durumu")
+        hata: str = SchemaField(
+            description="Email gönderme başarısız olursa hata mesajı"
         )
 
     def __init__(self):
         super().__init__(
             disabled=True,
             id="4335878a-394e-4e67-adf2-919877ff49ae",
-            description="This block sends an email using the provided SMTP credentials.",
+            description="Bu blok sağlanan SMTP kimlik bilgilerini kullanarak email gönderir.",
             categories={BlockCategory.OUTPUT},
-            input_schema=SendEmailBlock.Input,
-            output_schema=SendEmailBlock.Output,
+            input_schema=EmailGondermeBloğu.Girdi,
+            output_schema=EmailGondermeBloğu.Cikti,
             test_input={
-                "to_email": "recipient@example.com",
-                "subject": "Test Email",
-                "body": "This is a test email.",
-                "creds": {
-                    "smtp_server": "smtp.gmail.com",
-                    "smtp_port": 25,
-                    "smtp_username": "your-email@gmail.com",
-                    "smtp_password": "your-gmail-password",
+                "alici_email": "alici@example.com",
+                "konu": "Test Email",
+                "govde": "Bu bir test emailidir.",
+                "kimlik_bilgileri": {
+                    "smtp_sunucusu": "smtp.gmail.com",
+                    "smtp_portu": 25,
+                    "smtp_kullanici_adi": "your-email@gmail.com",
+                    "smtp_sifre": "your-gmail-password",
                 },
             },
-            test_output=[("status", "Email sent successfully")],
-            test_mock={"send_email": lambda *args, **kwargs: "Email sent successfully"},
+            test_output=[("durum", "Email başarıyla gönderildi")],
+            test_mock={"email_gonder": lambda *args, **kwargs: "Email başarıyla gönderildi"},
         )
 
     @staticmethod
-    def send_email(
-        creds: EmailCredentials, to_email: str, subject: str, body: str
+    def email_gonder(
+        kimlik_bilgileri: EmailKimlikBilgileri, alici_email: str, konu: str, govde: str
     ) -> str:
-        smtp_server = creds.smtp_server
-        smtp_port = creds.smtp_port
-        smtp_username = creds.smtp_username.get_secret_value()
-        smtp_password = creds.smtp_password.get_secret_value()
+        smtp_sunucusu = kimlik_bilgileri.smtp_sunucusu
+        smtp_portu = kimlik_bilgileri.smtp_portu
+        smtp_kullanici_adi = kimlik_bilgileri.smtp_kullanici_adi.get_secret_value()
+        smtp_sifre = kimlik_bilgileri.smtp_sifre.get_secret_value()
 
         msg = MIMEMultipart()
-        msg["From"] = smtp_username
-        msg["To"] = to_email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain"))
+        msg["From"] = smtp_kullanici_adi
+        msg["To"] = alici_email
+        msg["Subject"] = konu
+        msg.attach(MIMEText(govde, "plain"))
 
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
+        with smtplib.SMTP(smtp_sunucusu, smtp_portu) as server:
             server.starttls()
-            server.login(smtp_username, smtp_password)
-            server.sendmail(smtp_username, to_email, msg.as_string())
+            server.login(smtp_kullanici_adi, smtp_sifre)
+            server.sendmail(smtp_kullanici_adi, alici_email, msg.as_string())
 
-        return "Email sent successfully"
+        return "Email başarıyla gönderildi"
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
-        yield "status", self.send_email(
-            input_data.creds,
-            input_data.to_email,
-            input_data.subject,
-            input_data.body,
+    def run(self, girdi_verisi: Girdi, **kwargs) -> BlockOutput:
+        yield "durum", self.email_gonder(
+            girdi_verisi.kimlik_bilgileri,
+            girdi_verisi.alici_email,
+            girdi_verisi.konu,
+            girdi_verisi.govde,
         )

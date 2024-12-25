@@ -5,105 +5,105 @@ from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
 from backend.data.model import SchemaField
 
 
-class ComparisonOperator(Enum):
-    EQUAL = "=="
-    NOT_EQUAL = "!="
-    GREATER_THAN = ">"
-    LESS_THAN = "<"
-    GREATER_THAN_OR_EQUAL = ">="
-    LESS_THAN_OR_EQUAL = "<="
+class KarsilastirmaOperatoru(Enum):
+    ESIT = "=="
+    ESIT_DEGIL = "!="
+    BUYUK = ">"
+    KUCUK = "<"
+    BUYUK_ESIT = ">="
+    KUCUK_ESIT = "<="
 
 
-class ConditionBlock(Block):
-    class Input(BlockSchema):
-        value1: Any = SchemaField(
-            description="Enter the first value for comparison",
-            placeholder="For example: 10 or 'hello' or True",
+class KosulBloku(Block):
+    class Girdi(BlockSchema):
+        deger1: Any = SchemaField(
+            description="Karşılaştırma için ilk değeri girin",
+            placeholder="Örneğin: 10 veya 'merhaba' veya True",
         )
-        operator: ComparisonOperator = SchemaField(
-            description="Choose the comparison operator",
-            placeholder="Select an operator",
+        operator: KarsilastirmaOperatoru = SchemaField(
+            description="Karşılaştırma operatörünü seçin",
+            placeholder="Bir operatör seçin",
         )
-        value2: Any = SchemaField(
-            description="Enter the second value for comparison",
-            placeholder="For example: 20 or 'world' or False",
+        deger2: Any = SchemaField(
+            description="Karşılaştırma için ikinci değeri girin",
+            placeholder="Örneğin: 20 veya 'dünya' veya False",
         )
-        yes_value: Any = SchemaField(
-            description="(Optional) Value to output if the condition is true. If not provided, value1 will be used.",
-            placeholder="Leave empty to use value1, or enter a specific value",
+        evet_degeri: Any = SchemaField(
+            description="(Opsiyonel) Koşul doğruysa çıkış değeri. Sağlanmazsa, deger1 kullanılacak.",
+            placeholder="Deger1 kullanmak için boş bırakın veya belirli bir değer girin",
             default=None,
         )
-        no_value: Any = SchemaField(
-            description="(Optional) Value to output if the condition is false. If not provided, value1 will be used.",
-            placeholder="Leave empty to use value1, or enter a specific value",
+        hayir_degeri: Any = SchemaField(
+            description="(Opsiyonel) Koşul yanlışsa çıkış değeri. Sağlanmazsa, deger1 kullanılacak.",
+            placeholder="Deger1 kullanmak için boş bırakın veya belirli bir değer girin",
             default=None,
         )
 
-    class Output(BlockSchema):
-        result: bool = SchemaField(
-            description="The result of the condition evaluation (True or False)"
+    class Cikti(BlockSchema):
+        sonuc: bool = SchemaField(
+            description="Koşul değerlendirmesinin sonucu (True veya False)"
         )
-        yes_output: Any = SchemaField(
-            description="The output value if the condition is true"
+        evet_ciktisi: Any = SchemaField(
+            description="Koşul doğruysa çıkış değeri"
         )
-        no_output: Any = SchemaField(
-            description="The output value if the condition is false"
+        hayir_ciktisi: Any = SchemaField(
+            description="Koşul yanlışsa çıkış değeri"
         )
 
     def __init__(self):
         super().__init__(
             id="715696a0-e1da-45c8-b209-c2fa9c3b0be6",
-            input_schema=ConditionBlock.Input,
-            output_schema=ConditionBlock.Output,
-            description="Handles conditional logic based on comparison operators",
+            input_schema=KosulBloku.Girdi,
+            output_schema=KosulBloku.Cikti,
+            description="Karşılaştırma operatörlerine dayalı koşullu mantığı işler",
             categories={BlockCategory.LOGIC},
             test_input={
-                "value1": 10,
-                "operator": ComparisonOperator.GREATER_THAN.value,
-                "value2": 5,
-                "yes_value": "Greater",
-                "no_value": "Not greater",
+                "deger1": 10,
+                "operator": KarsilastirmaOperatoru.BUYUK.value,
+                "deger2": 5,
+                "evet_degeri": "Büyük",
+                "hayir_degeri": "Büyük değil",
             },
             test_output=[
-                ("result", True),
-                ("yes_output", "Greater"),
+                ("sonuc", True),
+                ("evet_ciktisi", "Büyük"),
             ],
         )
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
-        operator = input_data.operator
+    def calistir(self, girdi_verisi: Girdi, **kwargs) -> BlockOutput:
+        operator = girdi_verisi.operator
 
-        value1 = input_data.value1
-        if isinstance(value1, str):
+        deger1 = girdi_verisi.deger1
+        if isinstance(deger1, str):
             try:
-                value1 = float(value1.strip())
+                deger1 = float(deger1.strip())
             except ValueError:
-                value1 = value1.strip()
+                deger1 = deger1.strip()
 
-        value2 = input_data.value2
-        if isinstance(value2, str):
+        deger2 = girdi_verisi.deger2
+        if isinstance(deger2, str):
             try:
-                value2 = float(value2.strip())
+                deger2 = float(deger2.strip())
             except ValueError:
-                value2 = value2.strip()
+                deger2 = deger2.strip()
 
-        yes_value = input_data.yes_value if input_data.yes_value is not None else value1
-        no_value = input_data.no_value if input_data.no_value is not None else value2
+        evet_degeri = girdi_verisi.evet_degeri if girdi_verisi.evet_degeri is not None else deger1
+        hayir_degeri = girdi_verisi.hayir_degeri if girdi_verisi.hayir_degeri is not None else deger2
 
-        comparison_funcs = {
-            ComparisonOperator.EQUAL: lambda a, b: a == b,
-            ComparisonOperator.NOT_EQUAL: lambda a, b: a != b,
-            ComparisonOperator.GREATER_THAN: lambda a, b: a > b,
-            ComparisonOperator.LESS_THAN: lambda a, b: a < b,
-            ComparisonOperator.GREATER_THAN_OR_EQUAL: lambda a, b: a >= b,
-            ComparisonOperator.LESS_THAN_OR_EQUAL: lambda a, b: a <= b,
+        karsilastirma_fonksiyonlari = {
+            KarsilastirmaOperatoru.ESIT: lambda a, b: a == b,
+            KarsilastirmaOperatoru.ESIT_DEGIL: lambda a, b: a != b,
+            KarsilastirmaOperatoru.BUYUK: lambda a, b: a > b,
+            KarsilastirmaOperatoru.KUCUK: lambda a, b: a < b,
+            KarsilastirmaOperatoru.BUYUK_ESIT: lambda a, b: a >= b,
+            KarsilastirmaOperatoru.KUCUK_ESIT: lambda a, b: a <= b,
         }
 
-        result = comparison_funcs[operator](value1, value2)
+        sonuc = karsilastirma_fonksiyonlari[operator](deger1, deger2)
 
-        yield "result", result
+        yield "sonuc", sonuc
 
-        if result:
-            yield "yes_output", yes_value
+        if sonuc:
+            yield "evet_ciktisi", evet_degeri
         else:
-            yield "no_output", no_value
+            yield "hayir_ciktisi", hayir_degeri

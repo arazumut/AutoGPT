@@ -12,6 +12,7 @@ from backend.data.model import (
 )
 from backend.integrations.providers import ProviderName
 
+# Test için kullanılan API anahtarı
 TEST_CREDENTIALS = APIKeyCredentials(
     id="01234567-89ab-cdef-0123-456789abcdef",
     provider="google_maps",
@@ -26,7 +27,7 @@ TEST_CREDENTIALS_INPUT = {
     "title": TEST_CREDENTIALS.type,
 }
 
-
+# Yer bilgilerini tutan model
 class Place(BaseModel):
     name: str
     address: str
@@ -35,43 +36,43 @@ class Place(BaseModel):
     reviews: int
     website: str
 
-
+# Google Maps arama bloğu
 class GoogleMapsSearchBlock(Block):
     class Input(BlockSchema):
         credentials: CredentialsMetaInput[
             Literal[ProviderName.GOOGLE_MAPS], Literal["api_key"]
-        ] = CredentialsField(description="Google Maps API Key")
+        ] = CredentialsField(description="Google Maps API Anahtarı")
         query: str = SchemaField(
-            description="Search query for local businesses",
-            placeholder="e.g., 'restaurants in New York'",
+            description="Yerel işletmeler için arama sorgusu",
+            placeholder="örneğin, 'New York'ta restoranlar'",
         )
         radius: int = SchemaField(
-            description="Search radius in meters (max 50000)",
+            description="Arama yarıçapı (maksimum 50000 metre)",
             default=5000,
             ge=1,
             le=50000,
         )
         max_results: int = SchemaField(
-            description="Maximum number of results to return (max 60)",
+            description="Döndürülecek maksimum sonuç sayısı (maksimum 60)",
             default=20,
             ge=1,
             le=60,
         )
 
     class Output(BlockSchema):
-        place: Place = SchemaField(description="Place found")
-        error: str = SchemaField(description="Error message if the search failed")
+        place: Place = SchemaField(description="Bulunan yer")
+        error: str = SchemaField(description="Arama başarısız olursa hata mesajı")
 
     def __init__(self):
         super().__init__(
             id="f47ac10b-58cc-4372-a567-0e02b2c3d479",
-            description="This block searches for local businesses using Google Maps API.",
+            description="Bu blok Google Maps API kullanarak yerel işletmeleri arar.",
             categories={BlockCategory.SEARCH},
             input_schema=GoogleMapsSearchBlock.Input,
             output_schema=GoogleMapsSearchBlock.Output,
             test_input={
                 "credentials": TEST_CREDENTIALS_INPUT,
-                "query": "restaurants in new york",
+                "query": "new york'ta restoranlar",
                 "radius": 5000,
                 "max_results": 5,
             },
@@ -79,7 +80,7 @@ class GoogleMapsSearchBlock(Block):
                 (
                     "place",
                     {
-                        "name": "Test Restaurant",
+                        "name": "Test Restoran",
                         "address": "123 Test St, New York, NY 10001",
                         "phone": "+1 (555) 123-4567",
                         "rating": 4.5,
@@ -91,7 +92,7 @@ class GoogleMapsSearchBlock(Block):
             test_mock={
                 "search_places": lambda *args, **kwargs: [
                     {
-                        "name": "Test Restaurant",
+                        "name": "Test Restoran",
                         "address": "123 Test St, New York, NY 10001",
                         "phone": "+1 (555) 123-4567",
                         "rating": 4.5,

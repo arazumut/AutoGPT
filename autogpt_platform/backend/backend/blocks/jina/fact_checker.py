@@ -11,39 +11,39 @@ from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
 from backend.data.model import SchemaField
 
 
-class FactCheckerBlock(Block):
-    class Input(BlockSchema):
-        statement: str = SchemaField(
-            description="The statement to check for factuality"
+class GercekKontrolBloku(Block):
+    class Girdi(BlockSchema):
+        ifade: str = SchemaField(
+            description="Gerçekliği kontrol edilecek ifade"
         )
-        credentials: JinaCredentialsInput = JinaCredentialsField()
+        kimlik_bilgileri: JinaCredentialsInput = JinaCredentialsField()
 
-    class Output(BlockSchema):
-        factuality: float = SchemaField(
-            description="The factuality score of the statement"
+    class Cikti(BlockSchema):
+        gerceklik: float = SchemaField(
+            description="İfadenin gerçeklik puanı"
         )
-        result: bool = SchemaField(description="The result of the factuality check")
-        reason: str = SchemaField(description="The reason for the factuality result")
-        error: str = SchemaField(description="Error message if the check fails")
+        sonuc: bool = SchemaField(description="Gerçeklik kontrolünün sonucu")
+        sebep: str = SchemaField(description="Gerçeklik sonucunun sebebi")
+        hata: str = SchemaField(description="Kontrol başarısız olursa hata mesajı")
 
     def __init__(self):
         super().__init__(
             id="d38b6c5e-9968-4271-8423-6cfe60d6e7e6",
-            description="This block checks the factuality of a given statement using Jina AI's Grounding API.",
+            description="Bu blok, verilen ifadenin gerçekliğini Jina AI'nin Grounding API'sini kullanarak kontrol eder.",
             categories={BlockCategory.SEARCH},
-            input_schema=FactCheckerBlock.Input,
-            output_schema=FactCheckerBlock.Output,
+            input_schema=GercekKontrolBloku.Girdi,
+            output_schema=GercekKontrolBloku.Cikti,
         )
 
-    def run(
-        self, input_data: Input, *, credentials: JinaCredentials, **kwargs
+    def calistir(
+        self, girdi_verisi: Girdi, *, kimlik_bilgileri: JinaCredentials, **kwargs
     ) -> BlockOutput:
-        encoded_statement = quote(input_data.statement)
-        url = f"https://g.jina.ai/{encoded_statement}"
+        kodlanmis_ifade = quote(girdi_verisi.ifade)
+        url = f"https://g.jina.ai/{kodlanmis_ifade}"
 
         headers = {
             "Accept": "application/json",
-            "Authorization": f"Bearer {credentials.api_key.get_secret_value()}",
+            "Authorization": f"Bearer {kimlik_bilgileri.api_key.get_secret_value()}",
         }
 
         response = requests.get(url, headers=headers)
@@ -52,8 +52,9 @@ class FactCheckerBlock(Block):
 
         if "data" in data:
             data = data["data"]
-            yield "factuality", data["factuality"]
-            yield "result", data["result"]
-            yield "reason", data["reason"]
+            yield "gerceklik", data["factuality"]
+            yield "sonuc", data["result"]
+            yield "sebep", data["reason"]
         else:
-            raise RuntimeError(f"Expected 'data' key not found in response: {data}")
+            raise RuntimeError(f"Beklenen 'data' anahtarı yanıt içinde bulunamadı: {data}")
+

@@ -1,43 +1,43 @@
 from backend.blocks.jina._auth import (
-    JinaCredentials,
-    JinaCredentialsField,
-    JinaCredentialsInput,
+    JinaKimlikBilgileri,
+    JinaKimlikBilgileriAlanı,
+    JinaKimlikBilgileriGirişi,
 )
-from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
-from backend.data.model import SchemaField
-from backend.util.request import requests
+from backend.data.block import Blok, BlokKategori, BlokÇıktısı, BlokŞeması
+from backend.data.model import ŞemaAlanı
+from backend.util.request import istekler
 
 
-class JinaEmbeddingBlock(Block):
-    class Input(BlockSchema):
-        texts: list = SchemaField(description="List of texts to embed")
-        credentials: JinaCredentialsInput = JinaCredentialsField()
-        model: str = SchemaField(
-            description="Jina embedding model to use",
-            default="jina-embeddings-v2-base-en",
+class JinaGömmeBloku(Blok):
+    class Giriş(BlokŞeması):
+        metinler: list = ŞemaAlanı(açıklama="Gömülecek metinlerin listesi")
+        kimlik_bilgileri: JinaKimlikBilgileriGirişi = JinaKimlikBilgileriAlanı()
+        model: str = ŞemaAlanı(
+            açıklama="Kullanılacak Jina gömme modeli",
+            varsayılan="jina-embeddings-v2-base-en",
         )
 
-    class Output(BlockSchema):
-        embeddings: list = SchemaField(description="List of embeddings")
+    class Çıkış(BlokŞeması):
+        gömmeler: list = ŞemaAlanı(açıklama="Gömme listesi")
 
     def __init__(self):
         super().__init__(
             id="7c56b3ab-62e7-43a2-a2dc-4ec4245660b6",
-            description="Generates embeddings using Jina AI",
-            categories={BlockCategory.AI},
-            input_schema=JinaEmbeddingBlock.Input,
-            output_schema=JinaEmbeddingBlock.Output,
+            açıklama="Jina AI kullanarak gömmeler oluşturur",
+            kategoriler={BlokKategori.YZ},
+            giriş_şeması=JinaGömmeBloku.Giriş,
+            çıkış_şeması=JinaGömmeBloku.Çıkış,
         )
 
-    def run(
-        self, input_data: Input, *, credentials: JinaCredentials, **kwargs
-    ) -> BlockOutput:
+    def çalıştır(
+        self, giriş_verisi: Giriş, *, kimlik_bilgileri: JinaKimlikBilgileri, **kwargs
+    ) -> BlokÇıktısı:
         url = "https://api.jina.ai/v1/embeddings"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {credentials.api_key.get_secret_value()}",
+        başlıklar = {
+            "İçerik-Tipi": "application/json",
+            "Yetkilendirme": f"Bearer {kimlik_bilgileri.api_anahtarı.get_secret_value()}",
         }
-        data = {"input": input_data.texts, "model": input_data.model}
-        response = requests.post(url, headers=headers, json=data)
-        embeddings = [e["embedding"] for e in response.json()["data"]]
-        yield "embeddings", embeddings
+        veri = {"giriş": giriş_verisi.metinler, "model": giriş_verisi.model}
+        yanıt = istekler.post(url, başlıklar=başlıklar, json=veri)
+        gömmeler = [e["gömme"] for e in yanıt.json()["veri"]]
+        yield "gömmeler", gömmeler

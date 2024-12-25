@@ -4,36 +4,36 @@ from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
 from backend.data.model import SchemaField
 
 
-class TextDecoderBlock(Block):
-    class Input(BlockSchema):
-        text: str = SchemaField(
-            description="A string containing escaped characters to be decoded",
-            placeholder='Your entire text block with \\n and \\" escaped characters',
+class MetinÇözücüBlok(Block):
+    class Girdi(BlockSchema):
+        metin: str = SchemaField(
+            description="Çözülecek kaçış karakterleri içeren bir dize",
+            placeholder='\\n ve \\" kaçış karakterleri içeren tüm metin bloğunuz',
         )
 
-    class Output(BlockSchema):
-        decoded_text: str = SchemaField(
-            description="The decoded text with escape sequences processed"
+    class Çıktı(BlockSchema):
+        çözülen_metin: str = SchemaField(
+            description="Kaçış dizileri işlenmiş çözülen metin"
         )
 
     def __init__(self):
         super().__init__(
             id="2570e8fe-8447-43ed-84c7-70d657923231",
-            description="Decodes a string containing escape sequences into actual text",
+            description="Kaçış dizileri içeren bir dizeyi gerçek metne çözer",
             categories={BlockCategory.TEXT},
-            input_schema=TextDecoderBlock.Input,
-            output_schema=TextDecoderBlock.Output,
-            test_input={"text": """Hello\nWorld!\nThis is a \"quoted\" string."""},
+            input_schema=MetinÇözücüBlok.Girdi,
+            output_schema=MetinÇözücüBlok.Çıktı,
+            test_input={"metin": """Merhaba\nDünya!\nBu bir \"alıntılanmış\" dizedir."""},
             test_output=[
                 (
-                    "decoded_text",
-                    """Hello
-World!
-This is a "quoted" string.""",
+                    "çözülen_metin",
+                    """Merhaba
+Dünya!
+Bu bir "alıntılanmış" dizedir.""",
                 )
             ],
         )
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
-        decoded_text = codecs.decode(input_data.text, "unicode_escape")
-        yield "decoded_text", decoded_text
+    def çalıştır(self, girdi_verisi: Girdi, **kwargs) -> BlockOutput:
+        çözülen_metin = codecs.decode(girdi_verisi.metin, "unicode_escape")
+        yield "çözülen_metin", çözülen_metin

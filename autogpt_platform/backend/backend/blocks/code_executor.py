@@ -13,6 +13,7 @@ from backend.data.model import (
 )
 from backend.integrations.providers import ProviderName
 
+# Test için kullanılan API anahtar bilgileri
 TEST_CREDENTIALS = APIKeyCredentials(
     id="01234567-89ab-cdef-0123-456789abcdef",
     provider="e2b",
@@ -27,7 +28,7 @@ TEST_CREDENTIALS_INPUT = {
     "title": TEST_CREDENTIALS.type,
 }
 
-
+# Desteklenen programlama dilleri
 class ProgrammingLanguage(Enum):
     PYTHON = "python"
     JAVASCRIPT = "js"
@@ -35,24 +36,24 @@ class ProgrammingLanguage(Enum):
     R = "r"
     JAVA = "java"
 
-
+# Kod yürütme bloğu
 class CodeExecutionBlock(Block):
-    # TODO : Add support to upload and download files
-    # Currently, You can customized the CPU and Memory, only by creating a pre customized sandbox template
+    # TODO : Dosya yükleme ve indirme desteği ekle
+    # Şu anda, CPU ve Belleği yalnızca önceden özelleştirilmiş bir sandbox şablonu oluşturarak özelleştirebilirsiniz
     class Input(BlockSchema):
         credentials: CredentialsMetaInput[
             Literal[ProviderName.E2B], Literal["api_key"]
         ] = CredentialsField(
-            description="Enter your api key for the E2B Sandbox. You can get it in here - https://e2b.dev/docs",
+            description="E2B Sandbox için API anahtarınızı girin. Buradan alabilirsiniz - https://e2b.dev/docs",
         )
 
-        # Todo : Option to run commond in background
+        # TODO : Komutları arka planda çalıştırma seçeneği ekle
         setup_commands: list[str] = SchemaField(
             description=(
-                "Shell commands to set up the sandbox before running the code. "
-                "You can use `curl` or `git` to install your desired Debian based "
-                "package manager. `pip` and `npm` are pre-installed.\n\n"
-                "These commands are executed with `sh`, in the foreground."
+                "Sandbox'u kodu çalıştırmadan önce ayarlamak için kabuk komutları. "
+                "İstediğiniz Debian tabanlı paket yöneticisini kurmak için `curl` veya `git` kullanabilirsiniz. "
+                "`pip` ve `npm` önceden yüklenmiştir.\n\n"
+                "Bu komutlar `sh` ile ön planda çalıştırılır."
             ),
             placeholder="pip install cowsay",
             default=[],
@@ -60,26 +61,26 @@ class CodeExecutionBlock(Block):
         )
 
         code: str = SchemaField(
-            description="Code to execute in the sandbox",
-            placeholder="print('Hello, World!')",
+            description="Sandbox içinde çalıştırılacak kod",
+            placeholder="print('Merhaba, Dünya!')",
             default="",
             advanced=False,
         )
 
         language: ProgrammingLanguage = SchemaField(
-            description="Programming language to execute",
+            description="Çalıştırılacak programlama dili",
             default=ProgrammingLanguage.PYTHON,
             advanced=False,
         )
 
         timeout: int = SchemaField(
-            description="Execution timeout in seconds", default=300
+            description="Çalıştırma zaman aşımı süresi (saniye cinsinden)", default=300
         )
 
         template_id: str = SchemaField(
             description=(
-                "You can use an E2B sandbox template by entering its ID here. "
-                "Check out the E2B docs for more details: "
+                "Bir E2B sandbox şablonu kullanabilirsiniz, bunun için buraya ID'sini girin. "
+                "Daha fazla detay için E2B dokümanlarına bakın: "
                 "[E2B - Sandbox template](https://e2b.dev/docs/sandbox-template)"
             ),
             default="",
@@ -87,37 +88,37 @@ class CodeExecutionBlock(Block):
         )
 
     class Output(BlockSchema):
-        response: str = SchemaField(description="Response from code execution")
+        response: str = SchemaField(description="Kod yürütme yanıtı")
         stdout_logs: str = SchemaField(
-            description="Standard output logs from execution"
+            description="Çalıştırma sırasında standart çıktı logları"
         )
-        stderr_logs: str = SchemaField(description="Standard error logs from execution")
-        error: str = SchemaField(description="Error message if execution failed")
+        stderr_logs: str = SchemaField(description="Çalıştırma sırasında standart hata logları")
+        error: str = SchemaField(description="Çalıştırma başarısız olursa hata mesajı")
 
     def __init__(self):
         super().__init__(
             id="0b02b072-abe7-11ef-8372-fb5d162dd712",
-            description="Executes code in an isolated sandbox environment with internet access.",
+            description="İnternet erişimi olan izole bir sandbox ortamında kod çalıştırır.",
             categories={BlockCategory.DEVELOPER_TOOLS},
             input_schema=CodeExecutionBlock.Input,
             output_schema=CodeExecutionBlock.Output,
             test_credentials=TEST_CREDENTIALS,
             test_input={
                 "credentials": TEST_CREDENTIALS_INPUT,
-                "code": "print('Hello World')",
+                "code": "print('Merhaba Dünya')",
                 "language": ProgrammingLanguage.PYTHON.value,
                 "setup_commands": [],
                 "timeout": 300,
                 "template_id": "",
             },
             test_output=[
-                ("response", "Hello World"),
-                ("stdout_logs", "Hello World\n"),
+                ("response", "Merhaba Dünya"),
+                ("stdout_logs", "Merhaba Dünya\n"),
             ],
             test_mock={
                 "execute_code": lambda code, language, setup_commands, timeout, api_key, template_id: (
-                    "Hello World",
-                    "Hello World\n",
+                    "Merhaba Dünya",
+                    "Merhaba Dünya\n",
                     "",
                 ),
             },
@@ -142,17 +143,17 @@ class CodeExecutionBlock(Block):
                 sandbox = Sandbox(api_key=api_key, timeout=timeout)
 
             if not sandbox:
-                raise Exception("Sandbox not created")
+                raise Exception("Sandbox oluşturulamadı")
 
-            # Running setup commands
+            # Kurulum komutlarını çalıştırma
             for cmd in setup_commands:
                 sandbox.commands.run(cmd)
 
-            # Executing the code
+            # Kodu çalıştırma
             execution = sandbox.run_code(
                 code,
                 language=language.value,
-                on_error=lambda e: sandbox.kill(),  # Kill the sandbox if there is an error
+                on_error=lambda e: sandbox.kill(),  # Hata olursa sandbox'u öldür
             )
 
             if execution.error:

@@ -7,7 +7,7 @@ from ._api import Color, CustomerDetails, OrderItem, Profile
 
 
 class Slant3DBlockBase(Block):
-    """Base block class for Slant3D API interactions"""
+    """Slant3D API etkileşimleri için temel blok sınıfı"""
 
     BASE_URL = "https://www.slant3dapi.com/api"
 
@@ -21,8 +21,8 @@ class Slant3DBlockBase(Block):
         )
 
         if not response.ok:
-            error_msg = response.json().get("error", "Unknown error")
-            raise RuntimeError(f"API request failed: {error_msg}")
+            error_msg = response.json().get("error", "Bilinmeyen hata")
+            raise RuntimeError(f"API isteği başarısız oldu: {error_msg}")
 
         return response.json()
 
@@ -41,8 +41,8 @@ class Slant3DBlockBase(Block):
 
         if color_tag not in valid_tags:
             raise ValueError(
-                f"""Invalid color profile combination {color_tag}.
-Valid colors for {profile.value} are:
+                f"""Geçersiz renk profil kombinasyonu {color_tag}.
+{profile.value} için geçerli renkler:
 {','.join([filament['colorTag'].replace(profile.value.lower(), '') for filament in response['filaments'] if filament['profile'] == profile.value])}
 """
             )
@@ -58,7 +58,7 @@ Valid colors for {profile.value} are:
         items: list[OrderItem],
         api_key: str,
     ) -> list[dict[str, Any]]:
-        """Helper function to format order data for API requests"""
+        """API istekleri için sipariş verilerini biçimlendiren yardımcı fonksiyon"""
         orders = []
         for item in items:
             order_data = {
@@ -84,7 +84,7 @@ Valid colors for {profile.value} are:
                 "order_item_name": item.file_url,
                 "order_quantity": item.quantity,
                 "order_image_url": "",
-                "order_sku": "NOT_USED",
+                "order_sku": "KULLANILMIYOR",
                 "order_item_color": self._convert_to_color(
                     item.profile, item.color, api_key
                 ),

@@ -1,14 +1,12 @@
 from typing import Any, Optional
-
 from backend.util.request import requests
 
-
-class GetRequest:
+class GetIstegi:
     @classmethod
-    def get_request(
-        cls, url: str, headers: Optional[dict] = None, json: bool = False
+    def get_istegi(
+        cls, url: str, basliklar: Optional[dict] = None, json: bool = False
     ) -> Any:
-        if headers is None:
-            headers = {}
-        response = requests.get(url, headers=headers)
-        return response.json() if json else response.text
+        if basliklar is None:
+            basliklar = {}
+        yanit = requests.get(url, headers=basliklar)
+        return yanit.json() if json else yanit.text

@@ -6,66 +6,65 @@ from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
 from backend.data.model import SchemaField
 
 
-class BlockInstallationBlock(Block):
+class BlokKurulumBloğu(Block):
     """
-    This block allows the verification and installation of other blocks in the system.
+    Bu blok, sistemdeki diğer blokların doğrulanmasını ve kurulmasını sağlar.
 
-    NOTE:
-        This block allows remote code execution on the server, and it should be used
-        for development purposes only.
+    NOT:
+        Bu blok, sunucuda uzaktan kod yürütülmesine izin verir ve yalnızca geliştirme amaçlı kullanılmalıdır.
     """
 
-    class Input(BlockSchema):
-        code: str = SchemaField(
-            description="Python code of the block to be installed",
+    class Girdi(BlockSchema):
+        kod: str = SchemaField(
+            description="Kurulacak bloğun Python kodu",
         )
 
-    class Output(BlockSchema):
-        success: str = SchemaField(
-            description="Success message if the block is installed successfully",
+    class Çıktı(BlockSchema):
+        başarı: str = SchemaField(
+            description="Blok başarıyla kurulduğunda başarı mesajı",
         )
-        error: str = SchemaField(
-            description="Error message if the block installation fails",
+        hata: str = SchemaField(
+            description="Blok kurulumu başarısız olursa hata mesajı",
         )
 
     def __init__(self):
         super().__init__(
             id="45e78db5-03e9-447f-9395-308d712f5f08",
-            description="Given a code string, this block allows the verification and installation of a block code into the system.",
+            description="Bir kod dizesi verildiğinde, bu blok bir blok kodunun sisteme doğrulanmasını ve kurulmasını sağlar.",
             categories={BlockCategory.BASIC},
-            input_schema=BlockInstallationBlock.Input,
-            output_schema=BlockInstallationBlock.Output,
+            input_schema=BlokKurulumBloğu.Girdi,
+            output_schema=BlokKurulumBloğu.Çıktı,
             disabled=True,
         )
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
-        code = input_data.code
+    def çalıştır(self, girdi_verisi: Girdi, **kwargs) -> BlockOutput:
+        kod = girdi_verisi.kod
 
-        if search := re.search(r"class (\w+)\(Block\):", code):
-            class_name = search.group(1)
+        if arama := re.search(r"class (\w+)\(Block\):", kod):
+            sınıf_adı = arama.group(1)
         else:
-            raise RuntimeError("No class found in the code.")
+            raise RuntimeError("Kodda sınıf bulunamadı.")
 
-        if search := re.search(r"id=\"(\w+-\w+-\w+-\w+-\w+)\"", code):
-            file_name = search.group(1)
+        if arama := re.search(r"id=\"(\w+-\w+-\w+-\w+-\w+)\"", kod):
+            dosya_adı = arama.group(1)
         else:
-            raise RuntimeError("No UUID found in the code.")
+            raise RuntimeError("Kodda UUID bulunamadı.")
 
-        block_dir = os.path.dirname(__file__)
-        file_path = f"{block_dir}/{file_name}.py"
-        module_name = f"backend.blocks.{file_name}"
-        with open(file_path, "w") as f:
-            f.write(code)
+        blok_dizini = os.path.dirname(__file__)
+        dosya_yolu = f"{blok_dizini}/{dosya_adı}.py"
+        modül_adı = f"backend.blocks.{dosya_adı}"
+        with open(dosya_yolu, "w") as f:
+            f.write(kod)
 
         try:
-            module = __import__(module_name, fromlist=[class_name])
-            block_class: Type[Block] = getattr(module, class_name)
-            block = block_class()
+            modül = __import__(modül_adı, fromlist=[sınıf_adı])
+            blok_sınıfı: Type[Block] = getattr(modül, sınıf_adı)
+            blok = blok_sınıfı()
 
             from backend.util.test import execute_block_test
 
-            execute_block_test(block)
-            yield "success", "Block installed successfully."
+            execute_block_test(blok)
+            yield "başarı", "Blok başarıyla kuruldu."
         except Exception as e:
-            os.remove(file_path)
-            raise RuntimeError(f"[Code]\n{code}\n\n[Error]\n{str(e)}")
+            os.remove(dosya_yolu)
+            raise RuntimeError(f"[Kod]\n{kod}\n\n[Hata]\n{str(e)}")
