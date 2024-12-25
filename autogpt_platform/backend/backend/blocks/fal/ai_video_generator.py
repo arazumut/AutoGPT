@@ -17,43 +17,41 @@ from backend.data.model import SchemaField
 
 logger = logging.getLogger(__name__)
 
-
 class FalModel(str, Enum):
     MOCHI = "fal-ai/mochi-v1"
     LUMA = "fal-ai/luma-dream-machine"
 
-
 class AIVideoGeneratorBlock(Block):
     class Input(BlockSchema):
         prompt: str = SchemaField(
-            description="Description of the video to generate.",
-            placeholder="A dog running in a field.",
+            description="Oluşturulacak videonun açıklaması.",
+            placeholder="Bir tarlada koşan köpek.",
         )
         model: FalModel = SchemaField(
-            title="FAL Model",
+            title="FAL Modeli",
             default=FalModel.MOCHI,
-            description="The FAL model to use for video generation.",
+            description="Video oluşturma için kullanılacak FAL modeli.",
         )
         credentials: FalCredentialsInput = FalCredentialsField()
 
     class Output(BlockSchema):
-        video_url: str = SchemaField(description="The URL of the generated video.")
+        video_url: str = SchemaField(description="Oluşturulan videonun URL'si.")
         error: str = SchemaField(
-            description="Error message if video generation failed."
+            description="Video oluşturma başarısız olursa hata mesajı."
         )
         logs: list[str] = SchemaField(
-            description="Generation progress logs.", optional=True
+            description="Oluşturma ilerleme kayıtları.", optional=True
         )
 
     def __init__(self):
         super().__init__(
             id="530cf046-2ce0-4854-ae2c-659db17c7a46",
-            description="Generate videos using FAL AI models.",
+            description="FAL AI modellerini kullanarak video oluşturun.",
             categories={BlockCategory.AI},
             input_schema=self.Input,
             output_schema=self.Output,
             test_input={
-                "prompt": "A dog running in a field.",
+                "prompt": "Bir tarlada koşan köpek.",
                 "model": FalModel.MOCHI,
                 "credentials": TEST_CREDENTIALS_INPUT,
             },
@@ -65,7 +63,7 @@ class AIVideoGeneratorBlock(Block):
         )
 
     def _get_headers(self, api_key: str) -> dict[str, str]:
-        """Get headers for FAL API requests."""
+        """FAL API istekleri için başlıkları alın."""
         return {
             "Authorization": f"Key {api_key}",
             "Content-Type": "application/json",
@@ -74,52 +72,52 @@ class AIVideoGeneratorBlock(Block):
     def _submit_request(
         self, url: str, headers: dict[str, str], data: dict[str, Any]
     ) -> dict[str, Any]:
-        """Submit a request to the FAL API."""
+        """FAL API'ye istek gönderin."""
         try:
             response = httpx.post(url, headers=headers, json=data)
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            logger.error(f"FAL API request failed: {str(e)}")
-            raise RuntimeError(f"Failed to submit request: {str(e)}")
+            logger.error(f"FAL API isteği başarısız oldu: {str(e)}")
+            raise RuntimeError(f"İstek gönderilemedi: {str(e)}")
 
     def _poll_status(self, status_url: str, headers: dict[str, str]) -> dict[str, Any]:
-        """Poll the status endpoint until completion or failure."""
+        """Tamamlanana veya başarısız olana kadar durum uç noktasını sorgulayın."""
         try:
             response = httpx.get(status_url, headers=headers)
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            logger.error(f"Failed to get status: {str(e)}")
-            raise RuntimeError(f"Failed to get status: {str(e)}")
+            logger.error(f"Durum alınamadı: {str(e)}")
+            raise RuntimeError(f"Durum alınamadı: {str(e)}")
 
     def generate_video(self, input_data: Input, credentials: FalCredentials) -> str:
-        """Generate video using the specified FAL model."""
+        """Belirtilen FAL modelini kullanarak video oluşturun."""
         base_url = "https://queue.fal.run"
         api_key = credentials.api_key.get_secret_value()
         headers = self._get_headers(api_key)
 
-        # Submit generation request
+        # Oluşturma isteğini gönder
         submit_url = f"{base_url}/{input_data.model.value}"
         submit_data = {"prompt": input_data.prompt}
 
         seen_logs = set()
 
         try:
-            # Submit request to queue
+            # Kuyruğa istek gönder
             submit_response = httpx.post(submit_url, headers=headers, json=submit_data)
             submit_response.raise_for_status()
             request_data = submit_response.json()
 
-            # Get request_id and urls from initial response
+            # İlk yanıttan request_id ve url'leri alın
             request_id = request_data.get("request_id")
             status_url = request_data.get("status_url")
             result_url = request_data.get("response_url")
 
             if not all([request_id, status_url, result_url]):
-                raise ValueError("Missing required data in submission response")
+                raise ValueError("Gönderim yanıtında gerekli veriler eksik")
 
-            # Poll for status with exponential backoff
+            # Durumu üstel geri çekilme ile sorgulayın
             max_attempts = 30
             attempt = 0
             base_wait_time = 5
@@ -129,12 +127,12 @@ class AIVideoGeneratorBlock(Block):
                 status_response.raise_for_status()
                 status_data = status_response.json()
 
-                # Process new logs only
+                # Yalnızca yeni günlükleri işleyin
                 logs = status_data.get("logs", [])
                 if logs and isinstance(logs, list):
                     for log in logs:
                         if isinstance(log, dict):
-                            # Create a unique key for this log entry
+                            # Bu günlük girdisi için benzersiz bir anahtar oluşturun
                             log_key = (
                                 f"{log.get('timestamp', '')}-{log.get('message', '')}"
                             )
@@ -143,12 +141,12 @@ class AIVideoGeneratorBlock(Block):
                                 message = log.get("message", "")
                                 if message:
                                     logger.debug(
-                                        f"[FAL Generation] [{log.get('level', 'INFO')}] [{log.get('source', '')}] [{log.get('timestamp', '')}] {message}"
+                                        f"[FAL Oluşturma] [{log.get('level', 'INFO')}] [{log.get('source', '')}] [{log.get('timestamp', '')}] {message}"
                                     )
 
                 status = status_data.get("status")
                 if status == "COMPLETED":
-                    # Get the final result
+                    # Nihai sonucu alın
                     result_response = httpx.get(result_url, headers=headers)
                     result_response.raise_for_status()
                     result_data = result_response.json()
@@ -156,37 +154,37 @@ class AIVideoGeneratorBlock(Block):
                     if "video" not in result_data or not isinstance(
                         result_data["video"], dict
                     ):
-                        raise ValueError("Invalid response format - missing video data")
+                        raise ValueError("Geçersiz yanıt formatı - video verisi eksik")
 
                     video_url = result_data["video"].get("url")
                     if not video_url:
-                        raise ValueError("No video URL in response")
+                        raise ValueError("Yanıtta video URL'si yok")
 
                     return video_url
 
                 elif status == "FAILED":
-                    error_msg = status_data.get("error", "No error details provided")
-                    raise RuntimeError(f"Video generation failed: {error_msg}")
+                    error_msg = status_data.get("error", "Hata ayrıntıları sağlanmadı")
+                    raise RuntimeError(f"Video oluşturma başarısız oldu: {error_msg}")
                 elif status == "IN_QUEUE":
-                    position = status_data.get("queue_position", "unknown")
+                    position = status_data.get("queue_position", "bilinmiyor")
                     logger.debug(
-                        f"[FAL Generation] Status: In queue, position: {position}"
+                        f"[FAL Oluşturma] Durum: Kuyrukta, pozisyon: {position}"
                     )
                 elif status == "IN_PROGRESS":
                     logger.debug(
-                        "[FAL Generation] Status: Request is being processed..."
+                        "[FAL Oluşturma] Durum: İstek işleniyor..."
                     )
                 else:
-                    logger.info(f"[FAL Generation] Status: Unknown status: {status}")
+                    logger.info(f"[FAL Oluşturma] Durum: Bilinmeyen durum: {status}")
 
-                wait_time = min(base_wait_time * (2**attempt), 60)  # Cap at 60 seconds
+                wait_time = min(base_wait_time * (2**attempt), 60)  # 60 saniyede sınırla
                 time.sleep(wait_time)
                 attempt += 1
 
-            raise RuntimeError("Maximum polling attempts reached")
+            raise RuntimeError("Maksimum sorgulama denemesi aşıldı")
 
         except httpx.HTTPError as e:
-            raise RuntimeError(f"API request failed: {str(e)}")
+            raise RuntimeError(f"API isteği başarısız oldu: {str(e)}")
 
     def run(
         self, input_data: Input, *, credentials: FalCredentials, **kwargs

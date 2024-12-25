@@ -12,132 +12,132 @@ from backend.data.model import SchemaField
 from backend.util.request import requests
 
 
-class ExaSearchBlock(Block):
-    class Input(BlockSchema):
-        credentials: ExaCredentialsInput = ExaCredentialsField()
-        query: str = SchemaField(description="The search query")
-        use_auto_prompt: bool = SchemaField(
-            description="Whether to use autoprompt",
+class ExaAramaBloğu(Block):
+    class Girdi(BlockSchema):
+        kimlik_bilgileri: ExaCredentialsInput = ExaCredentialsField()
+        sorgu: str = SchemaField(description="Arama sorgusu")
+        otomatik_öneri_kullan: bool = SchemaField(
+            description="Otomatik öneri kullanılsın mı",
             default=True,
             advanced=True,
         )
-        type: str = SchemaField(
-            description="Type of search",
+        tür: str = SchemaField(
+            description="Arama türü",
             default="",
             advanced=True,
         )
-        category: str = SchemaField(
-            description="Category to search within",
+        kategori: str = SchemaField(
+            description="Arama yapılacak kategori",
             default="",
             advanced=True,
         )
-        number_of_results: int = SchemaField(
-            description="Number of results to return",
+        sonuç_sayısı: int = SchemaField(
+            description="Döndürülecek sonuç sayısı",
             default=10,
             advanced=True,
         )
-        include_domains: List[str] = SchemaField(
-            description="Domains to include in search",
+        dahil_edilecek_alan_adları: List[str] = SchemaField(
+            description="Aramada dahil edilecek alan adları",
             default=[],
         )
-        exclude_domains: List[str] = SchemaField(
-            description="Domains to exclude from search",
-            default=[],
-            advanced=True,
-        )
-        start_crawl_date: datetime = SchemaField(
-            description="Start date for crawled content",
-        )
-        end_crawl_date: datetime = SchemaField(
-            description="End date for crawled content",
-        )
-        start_published_date: datetime = SchemaField(
-            description="Start date for published content",
-        )
-        end_published_date: datetime = SchemaField(
-            description="End date for published content",
-        )
-        include_text: List[str] = SchemaField(
-            description="Text patterns to include",
+        hariç_tutulacak_alan_adları: List[str] = SchemaField(
+            description="Aramada hariç tutulacak alan adları",
             default=[],
             advanced=True,
         )
-        exclude_text: List[str] = SchemaField(
-            description="Text patterns to exclude",
+        başlama_tarama_tarihi: datetime = SchemaField(
+            description="Tarama içeriği için başlangıç tarihi",
+        )
+        bitiş_tarama_tarihi: datetime = SchemaField(
+            description="Tarama içeriği için bitiş tarihi",
+        )
+        başlama_yayın_tarihi: datetime = SchemaField(
+            description="Yayın içeriği için başlangıç tarihi",
+        )
+        bitiş_yayın_tarihi: datetime = SchemaField(
+            description="Yayın içeriği için bitiş tarihi",
+        )
+        dahil_edilecek_metin: List[str] = SchemaField(
+            description="Dahil edilecek metin desenleri",
             default=[],
             advanced=True,
         )
-        contents: ContentSettings = SchemaField(
-            description="Content retrieval settings",
+        hariç_tutulacak_metin: List[str] = SchemaField(
+            description="Hariç tutulacak metin desenleri",
+            default=[],
+            advanced=True,
+        )
+        içerik_ayarları: ContentSettings = SchemaField(
+            description="İçerik getirme ayarları",
             default=ContentSettings(),
             advanced=True,
         )
 
-    class Output(BlockSchema):
-        results: list = SchemaField(
-            description="List of search results",
+    class Çıktı(BlockSchema):
+        sonuçlar: list = SchemaField(
+            description="Arama sonuçlarının listesi",
             default=[],
         )
 
     def __init__(self):
         super().__init__(
             id="996cec64-ac40-4dde-982f-b0dc60a5824d",
-            description="Searches the web using Exa's advanced search API",
+            description="Exa'nın gelişmiş arama API'sini kullanarak webde arama yapar",
             categories={BlockCategory.SEARCH},
-            input_schema=ExaSearchBlock.Input,
-            output_schema=ExaSearchBlock.Output,
+            input_schema=ExaAramaBloğu.Girdi,
+            output_schema=ExaAramaBloğu.Çıktı,
         )
 
-    def run(
-        self, input_data: Input, *, credentials: ExaCredentials, **kwargs
+    def çalıştır(
+        self, girdi_verisi: Girdi, *, kimlik_bilgileri: ExaCredentials, **kwargs
     ) -> BlockOutput:
         url = "https://api.exa.ai/search"
-        headers = {
+        başlıklar = {
             "Content-Type": "application/json",
-            "x-api-key": credentials.api_key.get_secret_value(),
+            "x-api-key": kimlik_bilgileri.api_key.get_secret_value(),
         }
 
-        payload = {
-            "query": input_data.query,
-            "useAutoprompt": input_data.use_auto_prompt,
-            "numResults": input_data.number_of_results,
-            "contents": input_data.contents.dict(),
+        yük = {
+            "query": girdi_verisi.sorgu,
+            "useAutoprompt": girdi_verisi.otomatik_öneri_kullan,
+            "numResults": girdi_verisi.sonuç_sayısı,
+            "contents": girdi_verisi.içerik_ayarları.dict(),
         }
 
-        date_field_mapping = {
-            "start_crawl_date": "startCrawlDate",
-            "end_crawl_date": "endCrawlDate",
-            "start_published_date": "startPublishedDate",
-            "end_published_date": "endPublishedDate",
+        tarih_alanı_haritalama = {
+            "başlama_tarama_tarihi": "startCrawlDate",
+            "bitiş_tarama_tarihi": "endCrawlDate",
+            "başlama_yayın_tarihi": "startPublishedDate",
+            "bitiş_yayın_tarihi": "endPublishedDate",
         }
 
-        # Add dates if they exist
-        for input_field, api_field in date_field_mapping.items():
-            value = getattr(input_data, input_field, None)
-            if value:
-                payload[api_field] = value.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        # Tarihleri ekle
+        for girdi_alanı, api_alanı in tarih_alanı_haritalama.items():
+            değer = getattr(girdi_verisi, girdi_alanı, None)
+            if değer:
+                yük[api_alanı] = değer.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
-        optional_field_mapping = {
-            "type": "type",
-            "category": "category",
-            "include_domains": "includeDomains",
-            "exclude_domains": "excludeDomains",
-            "include_text": "includeText",
-            "exclude_text": "excludeText",
+        isteğe_bağlı_alan_haritalama = {
+            "tür": "type",
+            "kategori": "category",
+            "dahil_edilecek_alan_adları": "includeDomains",
+            "hariç_tutulacak_alan_adları": "excludeDomains",
+            "dahil_edilecek_metin": "includeText",
+            "hariç_tutulacak_metin": "excludeText",
         }
 
-        # Add other fields
-        for input_field, api_field in optional_field_mapping.items():
-            value = getattr(input_data, input_field)
-            if value:  # Only add non-empty values
-                payload[api_field] = value
+        # Diğer alanları ekle
+        for girdi_alanı, api_alanı in isteğe_bağlı_alan_haritalama.items():
+            değer = getattr(girdi_verisi, girdi_alanı)
+            if değer:  # Sadece boş olmayan değerleri ekle
+                yük[api_alanı] = değer
 
         try:
-            response = requests.post(url, headers=headers, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            # Extract just the results array from the response
-            yield "results", data.get("results", [])
+            yanıt = requests.post(url, headers=başlıklar, json=yük)
+            yanıt.raise_for_status()
+            veri = yanıt.json()
+            # Yanıttan sadece sonuçlar dizisini çıkar
+            yield "sonuçlar", veri.get("results", [])
         except Exception as e:
-            yield "error", str(e)
-            yield "results", []
+            yield "hata", str(e)
+            yield "sonuçlar", []

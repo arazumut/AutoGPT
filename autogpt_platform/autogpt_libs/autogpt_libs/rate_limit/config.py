@@ -29,3 +29,16 @@ class RateLimitSettings(BaseSettings):
 
 
 RATE_LIMIT_SETTINGS = RateLimitSettings()
+def get_redis_url() -> str:
+    """
+    Redis URL'sini döndürür.
+    """
+    return f"{RATE_LIMIT_SETTINGS.redis_host}:{RATE_LIMIT_SETTINGS.redis_port}"
+
+def is_rate_limited(api_key: str) -> bool:
+    """
+    Belirtilen API anahtarı için oran sınırlamasının aşılıp aşılmadığını kontrol eder.
+    """
+    # Bu işlevin tam uygulanması Redis bağlantısı ve oran sınırlama mantığı gerektirir.
+    # Bu sadece bir şablondur.
+    return False

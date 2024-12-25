@@ -25,15 +25,14 @@ GithubCredentialsInput = CredentialsMetaInput[
 
 def GithubCredentialsField(scope: str) -> GithubCredentialsInput:
     """
-    Creates a GitHub credentials input on a block.
+    Bir GitHub kimlik bilgisi girişi oluşturur.
 
-    Params:
-        scope: The authorization scope needed for the block to work. ([list of available scopes](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps#available-scopes))
+    Parametreler:
+        scope: Bloğun çalışması için gereken yetkilendirme kapsamı. ([mevcut kapsamların listesi](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps#available-scopes))
     """  # noqa
     return CredentialsField(
         required_scopes={scope},
-        description="The GitHub integration can be used with OAuth, "
-        "or any API key with sufficient permissions for the blocks it is used on.",
+        description="GitHub entegrasyonu OAuth ile veya bloklarda kullanılan yeterli izinlere sahip herhangi bir API anahtarı ile kullanılabilir.",
     )
 
 
@@ -41,7 +40,7 @@ TEST_CREDENTIALS = APIKeyCredentials(
     id="01234567-89ab-cdef-0123-456789abcdef",
     provider="github",
     api_key=SecretStr("mock-github-api-key"),
-    title="Mock GitHub API key",
+    title="Mock GitHub API anahtarı",
     expires_at=None,
 )
 TEST_CREDENTIALS_INPUT = {

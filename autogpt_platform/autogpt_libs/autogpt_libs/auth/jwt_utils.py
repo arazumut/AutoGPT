@@ -5,13 +5,13 @@ import jwt
 from .config import settings
 
 
-def parse_jwt_token(token: str) -> Dict[str, Any]:
+def jwt_tokenini_parse_et(token: str) -> Dict[str, Any]:
     """
-    Parse and validate a JWT token.
+    Bir JWT tokenini ayrıştır ve doğrula.
 
-    :param token: The token to parse
-    :return: The decoded payload
-    :raises ValueError: If the token is invalid or expired
+    :param token: Ayrıştırılacak token
+    :return: Ayrıştırılmış payload
+    :raises ValueError: Token geçersiz veya süresi dolmuşsa
     """
     try:
         payload = jwt.decode(
@@ -22,6 +22,6 @@ def parse_jwt_token(token: str) -> Dict[str, Any]:
         )
         return payload
     except jwt.ExpiredSignatureError:
-        raise ValueError("Token has expired")
+        raise ValueError("Tokenin süresi dolmuş")
     except jwt.InvalidTokenError as e:
-        raise ValueError(f"Invalid token: {str(e)}")
+        raise ValueError(f"Geçersiz token: {str(e)}")

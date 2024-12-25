@@ -8,16 +8,16 @@ from .utils import remove_color_codes
 
 class FancyConsoleFormatter(logging.Formatter):
     """
-    A custom logging formatter designed for console output.
+    Konsol çıktısı için özel bir log formatlayıcı.
 
-    This formatter enhances the standard logging output with color coding. The color
-    coding is based on the level of the log message, making it easier to distinguish
-    between different types of messages in the console output.
+    Bu formatlayıcı, standart log çıktısını renk kodlaması ile zenginleştirir. Renk
+    kodlaması, log mesajının seviyesine göre belirlenir ve konsol çıktısında farklı
+    türdeki mesajları ayırt etmeyi kolaylaştırır.
 
-    The color for each level is defined in the LEVEL_COLOR_MAP class attribute.
+    Her seviye için renk, LEVEL_COLOR_MAP sınıf özniteliğinde tanımlanmıştır.
     """
 
-    # level -> (level & text color, title color)
+    # seviye -> (seviye & metin rengi, başlık rengi)
     LEVEL_COLOR_MAP = {
         logging.DEBUG: Fore.LIGHTBLACK_EX,
         logging.INFO: Fore.BLUE,
@@ -27,23 +27,23 @@ class FancyConsoleFormatter(logging.Formatter):
     }
 
     def format(self, record: logging.LogRecord) -> str:
-        # Make sure `msg` is a string
+        # `msg`'in bir string olduğundan emin olun
         if not hasattr(record, "msg"):
             record.msg = ""
         elif type(record.msg) is not str:
             record.msg = str(record.msg)
 
-        # Determine default color based on error level
+        # Hata seviyesine göre varsayılan rengi belirleyin
         level_color = ""
         if record.levelno in self.LEVEL_COLOR_MAP:
             level_color = self.LEVEL_COLOR_MAP[record.levelno]
             record.levelname = f"{level_color}{record.levelname}{Style.RESET_ALL}"
 
-        # Determine color for message
+        # Mesaj için rengi belirleyin
         color = getattr(record, "color", level_color)
         color_is_specified = hasattr(record, "color")
 
-        # Don't color INFO messages unless the color is explicitly specified.
+        # Renk belirtilmedikçe INFO mesajlarını renklendirmeyin.
         if color and (record.levelno != logging.INFO or color_is_specified):
             record.msg = f"{color}{record.msg}{Style.RESET_ALL}"
 
@@ -56,24 +56,24 @@ class AGPTFormatter(FancyConsoleFormatter):
         self.no_color = no_color
 
     def format(self, record: logging.LogRecord) -> str:
-        # Make sure `msg` is a string
+        # `msg`'in bir string olduğundan emin olun
         if not hasattr(record, "msg"):
             record.msg = ""
         elif type(record.msg) is not str:
             record.msg = str(record.msg)
 
-        # Strip color from the message to prevent color spoofing
+        # Renk kodlarını kaldırarak mesajı renk sahtekarlığından koruyun
         if record.msg and not getattr(record, "preserve_color", False):
             record.msg = remove_color_codes(record.msg)
 
-        # Determine color for title
+        # Başlık için rengi belirleyin
         title = getattr(record, "title", "")
         title_color = getattr(record, "title_color", "") or self.LEVEL_COLOR_MAP.get(
             record.levelno, ""
         )
         if title and title_color:
             title = f"{title_color + Style.BRIGHT}{title}{Style.RESET_ALL}"
-        # Make sure record.title is set, and padded with a space if not empty
+        # record.title'ın ayarlandığından ve boş değilse bir boşluk ile doldurulduğundan emin olun
         record.title = f"{title} " if title else ""
 
         if self.no_color:
@@ -84,10 +84,10 @@ class AGPTFormatter(FancyConsoleFormatter):
 
 class StructuredLoggingFormatter(StructuredLogHandler, logging.Formatter):
     def __init__(self):
-        # Set up CloudLoggingFilter to add diagnostic info to the log records
+        # Log kayıtlarına tanısal bilgi eklemek için CloudLoggingFilter'ı ayarlayın
         self.cloud_logging_filter = CloudLoggingFilter()
 
-        # Init StructuredLogHandler
+        # StructuredLogHandler'ı başlatın
         super().__init__()
 
     def format(self, record: logging.LogRecord) -> str:

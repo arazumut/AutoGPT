@@ -6,13 +6,13 @@ from redis import Redis
 from .config import RATE_LIMIT_SETTINGS
 
 
-class RateLimiter:
+class OranSınırlayıcı:
     def __init__(
         self,
         redis_host: str = RATE_LIMIT_SETTINGS.redis_host,
         redis_port: str = RATE_LIMIT_SETTINGS.redis_port,
         redis_password: str = RATE_LIMIT_SETTINGS.redis_password,
-        requests_per_minute: int = RATE_LIMIT_SETTINGS.requests_per_minute,
+        dakika_başına_istek: int = RATE_LIMIT_SETTINGS.requests_per_minute,
     ):
         self.redis = Redis(
             host=redis_host,
@@ -20,32 +20,32 @@ class RateLimiter:
             password=redis_password,
             decode_responses=True,
         )
-        self.window = 60
-        self.max_requests = requests_per_minute
+        self.pencere = 60
+        self.max_istek = dakika_başına_istek
 
-    async def check_rate_limit(self, api_key_id: str) -> Tuple[bool, int, int]:
+    async def oran_sınırını_kontrol_et(self, api_anahtarı_id: str) -> Tuple[bool, int, int]:
         """
-        Check if request is within rate limits.
+        İsteğin oran sınırları içinde olup olmadığını kontrol et.
 
         Args:
-            api_key_id: The API key identifier to check
+            api_anahtarı_id: Kontrol edilecek API anahtarı kimliği
 
         Returns:
-            Tuple of (is_allowed, remaining_requests, reset_time)
+            (izin_verildi, kalan_istek, sıfırlama_zamanı) şeklinde bir demet
         """
-        now = time.time()
-        window_start = now - self.window
-        key = f"ratelimit:{api_key_id}:1min"
+        şimdi = time.time()
+        pencere_başlangıcı = şimdi - self.pencere
+        anahtar = f"oransınırı:{api_anahtarı_id}:1dakika"
 
         pipe = self.redis.pipeline()
-        pipe.zremrangebyscore(key, 0, window_start)
-        pipe.zadd(key, {str(now): now})
-        pipe.zcount(key, window_start, now)
-        pipe.expire(key, self.window)
+        pipe.zremrangebyscore(anahtar, 0, pencere_başlangıcı)
+        pipe.zadd(anahtar, {str(şimdi): şimdi})
+        pipe.zcount(anahtar, pencere_başlangıcı, şimdi)
+        pipe.expire(anahtar, self.pencere)
 
-        _, _, request_count, _ = pipe.execute()
+        _, _, istek_sayısı, _ = pipe.execute()
 
-        remaining = max(0, self.max_requests - request_count)
-        reset_time = int(now + self.window)
+        kalan = max(0, self.max_istek - istek_sayısı)
+        sıfırlama_zamanı = int(şimdi + self.pencere)
 
-        return request_count <= self.max_requests, remaining, reset_time
+        return istek_sayısı <= self.max_istek, kalan, sıfırlama_zamanı

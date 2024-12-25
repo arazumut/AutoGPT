@@ -1,7 +1,5 @@
 from typing import List, Optional
-
 from pydantic import BaseModel
-
 from backend.blocks.exa._auth import (
     ExaCredentials,
     ExaCredentialsField,
@@ -11,15 +9,14 @@ from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
 from backend.data.model import SchemaField
 from backend.util.request import requests
 
-
-class ContentRetrievalSettings(BaseModel):
-    text: Optional[dict] = SchemaField(
-        description="Text content settings",
+class IcerikGetirmeAyarları(BaseModel):
+    metin: Optional[dict] = SchemaField(
+        description="Metin içerik ayarları",
         default={"maxCharacters": 1000, "includeHtmlTags": False},
         advanced=True,
     )
-    highlights: Optional[dict] = SchemaField(
-        description="Highlight settings",
+    vurgular: Optional[dict] = SchemaField(
+        description="Vurgu ayarları",
         default={
             "numSentences": 3,
             "highlightsPerUrl": 3,
@@ -27,61 +24,60 @@ class ContentRetrievalSettings(BaseModel):
         },
         advanced=True,
     )
-    summary: Optional[dict] = SchemaField(
-        description="Summary settings",
+    özet: Optional[dict] = SchemaField(
+        description="Özet ayarları",
         default={"query": ""},
         advanced=True,
     )
 
-
-class ExaContentsBlock(Block):
-    class Input(BlockSchema):
-        credentials: ExaCredentialsInput = ExaCredentialsField()
-        ids: List[str] = SchemaField(
-            description="Array of document IDs obtained from searches",
+class ExaIceriklerBlok(Block):
+    class Girdi(BlockSchema):
+        kimlik_bilgileri: ExaCredentialsInput = ExaCredentialsField()
+        kimlikler: List[str] = SchemaField(
+            description="Aramalardan elde edilen belge kimliklerinin dizisi",
         )
-        contents: ContentRetrievalSettings = SchemaField(
-            description="Content retrieval settings",
-            default=ContentRetrievalSettings(),
+        icerikler: IcerikGetirmeAyarları = SchemaField(
+            description="İçerik getirme ayarları",
+            default=IcerikGetirmeAyarları(),
             advanced=True,
         )
 
-    class Output(BlockSchema):
-        results: list = SchemaField(
-            description="List of document contents",
+    class Cikti(BlockSchema):
+        sonuçlar: list = SchemaField(
+            description="Belge içeriklerinin listesi",
             default=[],
         )
 
     def __init__(self):
         super().__init__(
             id="c52be83f-f8cd-4180-b243-af35f986b461",
-            description="Retrieves document contents using Exa's contents API",
+            description="Exa'nın içerik API'sini kullanarak belge içeriklerini getirir",
             categories={BlockCategory.SEARCH},
-            input_schema=ExaContentsBlock.Input,
-            output_schema=ExaContentsBlock.Output,
+            input_schema=ExaIceriklerBlok.Girdi,
+            output_schema=ExaIceriklerBlok.Cikti,
         )
 
-    def run(
-        self, input_data: Input, *, credentials: ExaCredentials, **kwargs
+    def çalıştır(
+        self, girdi_verisi: Girdi, *, kimlik_bilgileri: ExaCredentials, **kwargs
     ) -> BlockOutput:
         url = "https://api.exa.ai/contents"
-        headers = {
+        başlıklar = {
             "Content-Type": "application/json",
-            "x-api-key": credentials.api_key.get_secret_value(),
+            "x-api-key": kimlik_bilgileri.api_key.get_secret_value(),
         }
 
-        payload = {
-            "ids": input_data.ids,
-            "text": input_data.contents.text,
-            "highlights": input_data.contents.highlights,
-            "summary": input_data.contents.summary,
+        yük = {
+            "ids": girdi_verisi.kimlikler,
+            "text": girdi_verisi.icerikler.metin,
+            "highlights": girdi_verisi.icerikler.vurgular,
+            "summary": girdi_verisi.icerikler.özet,
         }
 
         try:
-            response = requests.post(url, headers=headers, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            yield "results", data.get("results", [])
+            yanıt = requests.post(url, headers=başlıklar, json=yük)
+            yanıt.raise_for_status()
+            veri = yanıt.json()
+            yield "sonuçlar", veri.get("results", [])
         except Exception as e:
-            yield "error", str(e)
-            yield "results", []
+            yield "hata", str(e)
+            yield "sonuçlar", []

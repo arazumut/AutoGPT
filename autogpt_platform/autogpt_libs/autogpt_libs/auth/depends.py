@@ -1,46 +1,48 @@
 import fastapi
 
-from .config import Settings
-from .middleware import auth_middleware
-from .models import DEFAULT_USER_ID, User
+from .config import Ayarlar
+from .middleware import kimlik_dogrulama_arabirimi
+from .models import VARSAYILAN_KULLANICI_ID, Kullanıcı
 
 
-def requires_user(payload: dict = fastapi.Depends(auth_middleware)) -> User:
-    return verify_user(payload, admin_only=False)
+def kullanici_gerektirir(payload: dict = fastapi.Depends(kimlik_dogrulama_arabirimi)) -> Kullanıcı:
+    return kullaniciyi_dogrula(payload, sadece_admin=False)
 
 
-def requires_admin_user(
-    payload: dict = fastapi.Depends(auth_middleware),
-) -> User:
-    return verify_user(payload, admin_only=True)
+def admin_kullanici_gerektirir(
+    payload: dict = fastapi.Depends(kimlik_dogrulama_arabirimi),
+) -> Kullanıcı:
+    return kullaniciyi_dogrula(payload, sadece_admin=True)
 
 
-def verify_user(payload: dict | None, admin_only: bool) -> User:
+def kullaniciyi_dogrula(payload: dict | None, sadece_admin: bool) -> Kullanıcı:
     if not payload:
-        if Settings.ENABLE_AUTH:
+        if Ayarlar.KIMLIK_DOGRULAMA_ETKIN:
             raise fastapi.HTTPException(
-                status_code=401, detail="Authorization header is missing"
+                status_code=401, detail="Yetkilendirme başlığı eksik"
             )
-        # This handles the case when authentication is disabled
-        payload = {"sub": DEFAULT_USER_ID, "role": "admin"}
+        # Kimlik doğrulama devre dışı bırakıldığında bu durumu ele alır
+        payload = {"sub": VARSAYILAN_KULLANICI_ID, "rol": "admin"}
 
-    user_id = payload.get("sub")
+    
 
-    if not user_id:
+    kullanici_id = payload.get("sub")
+
+    if not kullanici_id:
         raise fastapi.HTTPException(
-            status_code=401, detail="User ID not found in token"
+            status_code=401, detail="Token'da Kullanıcı ID bulunamadı"
         )
 
-    if admin_only and payload["role"] != "admin":
-        raise fastapi.HTTPException(status_code=403, detail="Admin access required")
+    if sadece_admin and payload["rol"] != "admin":
+        raise fastapi.HTTPException(status_code=403, detail="Admin erişimi gerekli")
 
-    return User.from_payload(payload)
+    return Kullanıcı.payloaddan(payload)
 
 
-def get_user_id(payload: dict = fastapi.Depends(auth_middleware)) -> str:
-    user_id = payload.get("sub")
-    if not user_id:
+def kullanici_id_al(payload: dict = fastapi.Depends(kimlik_dogrulama_arabirimi)) -> str:
+    kullanici_id = payload.get("sub")
+    if not kullanici_id:
         raise fastapi.HTTPException(
-            status_code=401, detail="User ID not found in token"
+            status_code=401, detail="Token'da Kullanıcı ID bulunamadı"
         )
-    return user_id
+    return kullanici_id

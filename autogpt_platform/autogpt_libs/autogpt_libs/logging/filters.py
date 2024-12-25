@@ -1,12 +1,11 @@
 import logging
 
+class AltSeviyeFiltresi(logging.Filter):
+    """Belirli bir eşik seviyesinin altındaki günlük kayıtlarını filtreler."""
 
-class BelowLevelFilter(logging.Filter):
-    """Filter for logging levels below a certain threshold."""
-
-    def __init__(self, below_level: int):
+    def __init__(self, alt_seviye: int):
         super().__init__()
-        self.below_level = below_level
+        self.alt_seviye = alt_seviye
 
-    def filter(self, record: logging.LogRecord):
-        return record.levelno < self.below_level
+    def filter(self, kayit: logging.LogRecord):
+        return kayit.levelno < self.alt_seviye

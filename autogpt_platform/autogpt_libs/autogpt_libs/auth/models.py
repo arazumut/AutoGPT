@@ -1,22 +1,22 @@
 from dataclasses import dataclass
 
-DEFAULT_USER_ID = "3e53486c-cf57-477e-ba2a-cb02dc828e1a"
-DEFAULT_EMAIL = "default@example.com"
+# Varsayılan kullanıcı ID'si ve e-posta adresi
+VARSAYILAN_KULLANICI_ID = "3e53486c-cf57-477e-ba2a-cb02dc828e1a"
+VARSAYILAN_EPOSTA = "default@example.com"
 
-
-# Using dataclass here to avoid adding dependency on pydantic
+# Pydantic bağımlılığını eklememek için dataclass kullanıyoruz
 @dataclass(frozen=True)
-class User:
-    user_id: str
-    email: str
-    phone_number: str
-    role: str
+class Kullanici:
+    kullanici_id: str
+    eposta: str
+    telefon_numarasi: str
+    rol: str
 
     @classmethod
-    def from_payload(cls, payload):
+    def yukle(cls, yuk):
         return cls(
-            user_id=payload["sub"],
-            email=payload.get("email", ""),
-            phone_number=payload.get("phone", ""),
-            role=payload["role"],
+            kullanici_id=yuk["sub"],
+            eposta=yuk.get("email", ""),
+            telefon_numarasi=yuk.get("phone", ""),
+            rol=yuk["role"],
         )

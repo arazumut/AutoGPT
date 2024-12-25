@@ -13,116 +13,116 @@ from backend.util.request import requests
 from .helpers import ContentSettings
 
 
-class ExaFindSimilarBlock(Block):
-    class Input(BlockSchema):
-        credentials: ExaCredentialsInput = ExaCredentialsField()
+class ExaBenzerBulBlok(Block):
+    class Girdi(BlockSchema):
+        kimlik_bilgileri: ExaCredentialsInput = ExaCredentialsField()
         url: str = SchemaField(
-            description="The url for which you would like to find similar links"
+            description="Benzer bağlantıları bulmak istediğiniz URL"
         )
-        number_of_results: int = SchemaField(
-            description="Number of results to return",
+        sonuc_sayisi: int = SchemaField(
+            description="Döndürülecek sonuç sayısı",
             default=10,
             advanced=True,
         )
-        include_domains: List[str] = SchemaField(
-            description="Domains to include in search",
+        dahil_edilecek_alan_adlari: List[str] = SchemaField(
+            description="Aramaya dahil edilecek alan adları",
             default=[],
             advanced=True,
         )
-        exclude_domains: List[str] = SchemaField(
-            description="Domains to exclude from search",
+        hariç_tutulacak_alan_adlari: List[str] = SchemaField(
+            description="Aramadan hariç tutulacak alan adları",
             default=[],
             advanced=True,
         )
-        start_crawl_date: datetime = SchemaField(
-            description="Start date for crawled content",
+        baslangic_tarama_tarihi: datetime = SchemaField(
+            description="Tarama içeriği için başlangıç tarihi",
         )
-        end_crawl_date: datetime = SchemaField(
-            description="End date for crawled content",
+        bitis_tarama_tarihi: datetime = SchemaField(
+            description="Tarama içeriği için bitiş tarihi",
         )
-        start_published_date: datetime = SchemaField(
-            description="Start date for published content",
+        baslangic_yayin_tarihi: datetime = SchemaField(
+            description="Yayınlanmış içerik için başlangıç tarihi",
         )
-        end_published_date: datetime = SchemaField(
-            description="End date for published content",
+        bitis_yayin_tarihi: datetime = SchemaField(
+            description="Yayınlanmış içerik için bitiş tarihi",
         )
-        include_text: List[str] = SchemaField(
-            description="Text patterns to include (max 1 string, up to 5 words)",
+        dahil_edilecek_metin: List[str] = SchemaField(
+            description="Dahil edilecek metin desenleri (maksimum 1 dize, en fazla 5 kelime)",
             default=[],
             advanced=True,
         )
-        exclude_text: List[str] = SchemaField(
-            description="Text patterns to exclude (max 1 string, up to 5 words)",
+        hariç_tutulacak_metin: List[str] = SchemaField(
+            description="Hariç tutulacak metin desenleri (maksimum 1 dize, en fazla 5 kelime)",
             default=[],
             advanced=True,
         )
-        contents: ContentSettings = SchemaField(
-            description="Content retrieval settings",
+        icerik_ayarları: ContentSettings = SchemaField(
+            description="İçerik alma ayarları",
             default=ContentSettings(),
             advanced=True,
         )
 
-    class Output(BlockSchema):
-        results: List[Any] = SchemaField(
-            description="List of similar documents with title, URL, published date, author, and score",
+    class Cikti(BlockSchema):
+        sonuclar: List[Any] = SchemaField(
+            description="Başlık, URL, yayın tarihi, yazar ve puan ile benzer belgelerin listesi",
             default=[],
         )
 
     def __init__(self):
         super().__init__(
             id="5e7315d1-af61-4a0c-9350-7c868fa7438a",
-            description="Finds similar links using Exa's findSimilar API",
+            description="Exa'nın findSimilar API'sini kullanarak benzer bağlantıları bulur",
             categories={BlockCategory.SEARCH},
-            input_schema=ExaFindSimilarBlock.Input,
-            output_schema=ExaFindSimilarBlock.Output,
+            input_schema=ExaBenzerBulBlok.Girdi,
+            output_schema=ExaBenzerBulBlok.Cikti,
         )
 
-    def run(
-        self, input_data: Input, *, credentials: ExaCredentials, **kwargs
+    def calistir(
+        self, girdi_verisi: Girdi, *, kimlik_bilgileri: ExaCredentials, **kwargs
     ) -> BlockOutput:
         url = "https://api.exa.ai/findSimilar"
-        headers = {
+        basliklar = {
             "Content-Type": "application/json",
-            "x-api-key": credentials.api_key.get_secret_value(),
+            "x-api-key": kimlik_bilgileri.api_key.get_secret_value(),
         }
 
-        payload = {
-            "url": input_data.url,
-            "numResults": input_data.number_of_results,
-            "contents": input_data.contents.dict(),
+        yuk = {
+            "url": girdi_verisi.url,
+            "numResults": girdi_verisi.sonuc_sayisi,
+            "contents": girdi_verisi.icerik_ayarları.dict(),
         }
 
-        optional_field_mapping = {
-            "include_domains": "includeDomains",
-            "exclude_domains": "excludeDomains",
-            "include_text": "includeText",
-            "exclude_text": "excludeText",
+        opsiyonel_alan_esleme = {
+            "dahil_edilecek_alan_adlari": "includeDomains",
+            "hariç_tutulacak_alan_adlari": "excludeDomains",
+            "dahil_edilecek_metin": "includeText",
+            "hariç_tutulacak_metin": "excludeText",
         }
 
-        # Add optional fields if they have values
-        for input_field, api_field in optional_field_mapping.items():
-            value = getattr(input_data, input_field)
-            if value:  # Only add non-empty values
-                payload[api_field] = value
+        # Değerleri olan opsiyonel alanları ekle
+        for girdi_alanı, api_alanı in opsiyonel_alan_esleme.items():
+            deger = getattr(girdi_verisi, girdi_alanı)
+            if deger:  # Sadece boş olmayan değerleri ekle
+                yuk[api_alanı] = deger
 
-        date_field_mapping = {
-            "start_crawl_date": "startCrawlDate",
-            "end_crawl_date": "endCrawlDate",
-            "start_published_date": "startPublishedDate",
-            "end_published_date": "endPublishedDate",
+        tarih_alan_esleme = {
+            "baslangic_tarama_tarihi": "startCrawlDate",
+            "bitis_tarama_tarihi": "endCrawlDate",
+            "baslangic_yayin_tarihi": "startPublishedDate",
+            "bitis_yayin_tarihi": "endPublishedDate",
         }
 
-        # Add dates if they exist
-        for input_field, api_field in date_field_mapping.items():
-            value = getattr(input_data, input_field, None)
-            if value:
-                payload[api_field] = value.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        # Tarihleri ekle
+        for girdi_alanı, api_alanı in tarih_alan_esleme.items():
+            deger = getattr(girdi_verisi, girdi_alanı, None)
+            if deger:
+                yuk[api_alanı] = deger.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
         try:
-            response = requests.post(url, headers=headers, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            yield "results", data.get("results", [])
+            yanit = requests.post(url, headers=basliklar, json=yuk)
+            yanit.raise_for_status()
+            veri = yanit.json()
+            yield "sonuclar", veri.get("results", [])
         except Exception as e:
-            yield "error", str(e)
-            yield "results", []
+            yield "hata", str(e)
+            yield "sonuclar", []

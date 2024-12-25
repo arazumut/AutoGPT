@@ -1,36 +1,36 @@
 import pytest
 
-from .utils import remove_color_codes
+from .utils import renk_kodlarini_kaldir
 
 
 @pytest.mark.parametrize(
-    "raw_text, clean_text",
+    "ham_metin, temiz_metin",
     [
         (
-            "COMMAND = \x1b[36mbrowse_website\x1b[0m  "
-            "ARGUMENTS = \x1b[36m{'url': 'https://www.google.com',"
-            " 'question': 'What is the capital of France?'}\x1b[0m",
-            "COMMAND = browse_website  "
-            "ARGUMENTS = {'url': 'https://www.google.com',"
-            " 'question': 'What is the capital of France?'}",
+            "KOMUT = \x1b[36mwebsitesini_gezin\x1b[0m  "
+            "ARGÜMANLAR = \x1b[36m{'url': 'https://www.google.com',"
+            " 'soru': 'Fransa'nın başkenti nedir?'}\x1b[0m",
+            "KOMUT = websitesini_gezin  "
+            "ARGÜMANLAR = {'url': 'https://www.google.com',"
+            " 'soru': 'Fransa'nın başkenti nedir?'}",
         ),
         (
-            "{'Schaue dir meine Projekte auf github () an, als auch meine Webseiten': "
+            "{'Projelerimi github'da () ve web sitelerimde inceleyin': "
             "'https://github.com/Significant-Gravitas/AutoGPT,"
-            " https://discord.gg/autogpt und https://twitter.com/Auto_GPT'}",
-            "{'Schaue dir meine Projekte auf github () an, als auch meine Webseiten': "
+            " https://discord.gg/autogpt ve https://twitter.com/Auto_GPT'}",
+            "{'Projelerimi github'da () ve web sitelerimde inceleyin': "
             "'https://github.com/Significant-Gravitas/AutoGPT,"
-            " https://discord.gg/autogpt und https://twitter.com/Auto_GPT'}",
+            " https://discord.gg/autogpt ve https://twitter.com/Auto_GPT'}",
         ),
         ("", ""),
-        ("hello", "hello"),
-        ("hello\x1b[31m world", "hello world"),
-        ("\x1b[36mHello,\x1b[32m World!", "Hello, World!"),
+        ("merhaba", "merhaba"),
+        ("merhaba\x1b[31m dünya", "merhaba dünya"),
+        ("\x1b[36mMerhaba,\x1b[32m Dünya!", "Merhaba, Dünya!"),
         (
-            "\x1b[1m\x1b[31mError:\x1b[0m\x1b[31m file not found",
-            "Error: file not found",
+            "\x1b[1m\x1b[31mHata:\x1b[0m\x1b[31m dosya bulunamadı",
+            "Hata: dosya bulunamadı",
         ),
     ],
 )
-def test_remove_color_codes(raw_text, clean_text):
-    assert remove_color_codes(raw_text) == clean_text
+def test_renk_kodlarini_kaldir(ham_metin, temiz_metin):
+    assert renk_kodlarini_kaldir(ham_metin) == temiz_metin

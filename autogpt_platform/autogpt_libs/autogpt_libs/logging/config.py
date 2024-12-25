@@ -24,6 +24,7 @@ DEBUG_LOG_FORMAT = (
 
 class LoggingConfig(BaseSettings):
     level: str = Field(
+        
         default="INFO",
         description="Logging level",
         validation_alias="LOG_LEVEL",

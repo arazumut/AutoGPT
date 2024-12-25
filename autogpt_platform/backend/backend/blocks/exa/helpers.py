@@ -1,54 +1,49 @@
 from typing import Optional
-
 from pydantic import BaseModel
 
 from backend.data.model import SchemaField
 
-
-class TextSettings(BaseModel):
-    max_characters: int = SchemaField(
+class MetinAyarları(BaseModel):
+    maksimum_karakter: int = SchemaField(
         default=1000,
-        description="Maximum number of characters to return",
+        description="Döndürülecek maksimum karakter sayısı",
         placeholder="1000",
     )
-    include_html_tags: bool = SchemaField(
+    html_etiketlerini_dahil_et: bool = SchemaField(
         default=False,
-        description="Whether to include HTML tags in the text",
+        description="Metinde HTML etiketlerini dahil edip etmeme",
         placeholder="False",
     )
 
-
-class HighlightSettings(BaseModel):
-    num_sentences: int = SchemaField(
+class VurguAyarları(BaseModel):
+    cümle_sayısı: int = SchemaField(
         default=3,
-        description="Number of sentences per highlight",
+        description="Her vurgu için cümle sayısı",
         placeholder="3",
     )
-    highlights_per_url: int = SchemaField(
+    url_başına_vurgu: int = SchemaField(
         default=3,
-        description="Number of highlights per URL",
+        description="URL başına vurgu sayısı",
         placeholder="3",
     )
 
-
-class SummarySettings(BaseModel):
-    query: Optional[str] = SchemaField(
+class ÖzetAyarları(BaseModel):
+    sorgu: Optional[str] = SchemaField(
         default="",
-        description="Query string for summarization",
-        placeholder="Enter query",
+        description="Özetleme için sorgu dizesi",
+        placeholder="Sorgu girin",
     )
 
-
-class ContentSettings(BaseModel):
-    text: TextSettings = SchemaField(
-        default=TextSettings(),
-        description="Text content settings",
+class İçerikAyarları(BaseModel):
+    metin: MetinAyarları = SchemaField(
+        default=MetinAyarları(),
+        description="Metin içerik ayarları",
     )
-    highlights: HighlightSettings = SchemaField(
-        default=HighlightSettings(),
-        description="Highlight settings",
+    vurgular: VurguAyarları = SchemaField(
+        default=VurguAyarları(),
+        description="Vurgu ayarları",
     )
-    summary: SummarySettings = SchemaField(
-        default=SummarySettings(),
-        description="Summary settings",
+    özet: ÖzetAyarları = SchemaField(
+        default=ÖzetAyarları(),
+        description="Özet ayarları",
     )

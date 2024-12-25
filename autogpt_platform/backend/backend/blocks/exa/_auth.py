@@ -1,16 +1,16 @@
 from typing import Literal
-
 from pydantic import SecretStr
-
 from backend.data.model import APIKeyCredentials, CredentialsField, CredentialsMetaInput
 from backend.integrations.providers import ProviderName
 
+# Exa API Anahtar Kimlik Bilgileri
 ExaCredentials = APIKeyCredentials
 ExaCredentialsInput = CredentialsMetaInput[
     Literal[ProviderName.EXA],
     Literal["api_key"],
 ]
 
+# Test Kimlik Bilgileri
 TEST_CREDENTIALS = APIKeyCredentials(
     id="01234567-89ab-cdef-0123-456789abcdef",
     provider="exa",
@@ -19,6 +19,7 @@ TEST_CREDENTIALS = APIKeyCredentials(
     expires_at=None,
 )
 
+# Test Kimlik Bilgileri Girişi
 TEST_CREDENTIALS_INPUT = {
     "provider": TEST_CREDENTIALS.provider,
     "id": TEST_CREDENTIALS.id,
@@ -26,7 +27,6 @@ TEST_CREDENTIALS_INPUT = {
     "title": TEST_CREDENTIALS.title,
 }
 
-
 def ExaCredentialsField() -> ExaCredentialsInput:
-    """Creates an Exa credentials input on a block."""
-    return CredentialsField(description="The Exa integration requires an API Key.")
+    """Bir Exa kimlik bilgisi girişi oluşturur."""
+    return CredentialsField(description="Exa entegrasyonu bir API Anahtarı gerektirir.")

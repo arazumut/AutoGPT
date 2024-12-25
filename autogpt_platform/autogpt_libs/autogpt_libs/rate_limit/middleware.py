@@ -4,29 +4,29 @@ from starlette.middleware.base import RequestResponseEndpoint
 from .limiter import RateLimiter
 
 
-async def rate_limit_middleware(request: Request, call_next: RequestResponseEndpoint):
-    """FastAPI middleware for rate limiting API requests."""
-    limiter = RateLimiter()
+async def oran_sınırı_ara_katmanı(request: Request, call_next: RequestResponseEndpoint):
+    """API istekleri için oran sınırlama ara katmanı."""
+    sınırlayıcı = RateLimiter()
 
     if not request.url.path.startswith("/api"):
         return await call_next(request)
 
-    api_key = request.headers.get("Authorization")
-    if not api_key:
+    api_anahtarı = request.headers.get("Authorization")
+    if not api_anahtarı:
         return await call_next(request)
 
-    api_key = api_key.replace("Bearer ", "")
+    api_anahtarı = api_anahtarı.replace("Bearer ", "")
 
-    is_allowed, remaining, reset_time = await limiter.check_rate_limit(api_key)
+    izin_verildi_mi, kalan, sıfırlama_zamanı = await sınırlayıcı.oran_sınırını_kontrol_et(api_anahtarı)
 
-    if not is_allowed:
+    if not izin_verildi_mi:
         raise HTTPException(
-            status_code=429, detail="Rate limit exceeded. Please try again later."
+            status_code=429, detail="Oran sınırı aşıldı. Lütfen daha sonra tekrar deneyin."
         )
 
-    response = await call_next(request)
-    response.headers["X-RateLimit-Limit"] = str(limiter.max_requests)
-    response.headers["X-RateLimit-Remaining"] = str(remaining)
-    response.headers["X-RateLimit-Reset"] = str(reset_time)
+    yanıt = await call_next(request)
+    yanıt.headers["X-RateLimit-Limit"] = str(sınırlayıcı.max_requests)
+    yanıt.headers["X-RateLimit-Remaining"] = str(kalan)
+    yanıt.headers["X-RateLimit-Reset"] = str(sıfırlama_zamanı)
 
-    return response
+    return yanıt

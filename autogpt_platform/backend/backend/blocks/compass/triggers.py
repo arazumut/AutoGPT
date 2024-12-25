@@ -11,49 +11,49 @@ from backend.data.model import SchemaField
 from backend.integrations.webhooks.compass import CompassWebhookType
 
 
-class Transcription(BaseModel):
-    text: str
-    speaker: str
-    end: float
-    start: float
-    duration: float
+class Transkripsiyon(BaseModel):
+    metin: str
+    konusmaci: str
+    bitis: float
+    baslangic: float
+    sure: float
 
 
-class TranscriptionDataModel(BaseModel):
-    date: str
-    transcription: str
-    transcriptions: list[Transcription]
+class TranskripsiyonVeriModeli(BaseModel):
+    tarih: str
+    transkripsiyon: str
+    transkripsiyonlar: list[Transkripsiyon]
 
 
-class CompassAITriggerBlock(Block):
-    class Input(BlockSchema):
-        payload: TranscriptionDataModel = SchemaField(hidden=True)
+class CompassAITriggerBlok(Block):
+    class Girdi(BlockSchema):
+        yuk: TranskripsiyonVeriModeli = SchemaField(gizli=True)
 
-    class Output(BlockSchema):
-        transcription: str = SchemaField(
-            description="The contents of the compass transcription."
+    class Cikti(BlockSchema):
+        transkripsiyon: str = SchemaField(
+            aciklama="Compass transkripsiyonunun içeriği."
         )
 
     def __init__(self):
         super().__init__(
             id="9464a020-ed1d-49e1-990f-7f2ac924a2b7",
-            description="This block will output the contents of the compass transcription.",
-            categories={BlockCategory.HARDWARE},
-            input_schema=CompassAITriggerBlock.Input,
-            output_schema=CompassAITriggerBlock.Output,
-            webhook_config=BlockManualWebhookConfig(
-                provider="compass",
-                webhook_type=CompassWebhookType.TRANSCRIPTION,
+            aciklama="Bu blok, Compass transkripsiyonunun içeriğini çıktı olarak verecek.",
+            kategoriler={BlockCategory.HARDWARE},
+            girdi_skemasi=CompassAITriggerBlok.Girdi,
+            cikti_skemasi=CompassAITriggerBlok.Cikti,
+            webhook_konfig=BlockManualWebhookConfig(
+                saglayici="compass",
+                webhook_turu=CompassWebhookType.TRANSCRIPTION,
             ),
-            test_input=[
-                {"input": "Hello, World!"},
-                {"input": "Hello, World!", "data": "Existing Data"},
+            test_girdisi=[
+                {"girdi": "Merhaba, Dünya!"},
+                {"girdi": "Merhaba, Dünya!", "veri": "Mevcut Veri"},
             ],
-            # test_output=[
-            #     ("output", "Hello, World!"),  # No data provided, so trigger is returned
-            #     ("output", "Existing Data"),  # Data is provided, so data is returned.
+            # test_ciktisi=[
+            #     ("cikti", "Merhaba, Dünya!"),  # Veri sağlanmadı, bu yüzden tetikleyici döndü
+            #     ("cikti", "Mevcut Veri"),  # Veri sağlandı, bu yüzden veri döndü.
             # ],
         )
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
-        yield "transcription", input_data.payload.transcription
+    def calistir(self, girdi_verisi: Girdi, **kwargs) -> BlockOutput:
+        yield "transkripsiyon", girdi_verisi.yuk.transkripsiyon
