@@ -32,7 +32,7 @@ from backend.integrations.credentials_store import (
     unreal_credentials,
 )
 
-# =============== Configure the cost for each LLM Model call =============== #
+# =============== Her LLM Model çağrısı için maliyeti yapılandır =============== #
 
 MODEL_COST: dict[LlmModel, int] = {
     LlmModel.O1_PREVIEW: 16,
@@ -74,11 +74,10 @@ MODEL_COST: dict[LlmModel, int] = {
 
 for model in LlmModel:
     if model not in MODEL_COST:
-        raise ValueError(f"Missing MODEL_COST for model: {model}")
-
+        raise ValueError(f"MODEL_COST eksik: {model}")
 
 LLM_COST = (
-    # Anthropic Models
+    # Anthropic Modelleri
     [
         BlockCost(
             cost_type=BlockCostType.RUN,
@@ -95,7 +94,7 @@ LLM_COST = (
         for model, cost in MODEL_COST.items()
         if MODEL_METADATA[model].provider == "anthropic"
     ]
-    # OpenAI Models
+    # OpenAI Modelleri
     + [
         BlockCost(
             cost_type=BlockCostType.RUN,
@@ -112,7 +111,7 @@ LLM_COST = (
         for model, cost in MODEL_COST.items()
         if MODEL_METADATA[model].provider == "openai"
     ]
-    # Groq Models
+    # Groq Modelleri
     + [
         BlockCost(
             cost_type=BlockCostType.RUN,
@@ -125,7 +124,7 @@ LLM_COST = (
         for model, cost in MODEL_COST.items()
         if MODEL_METADATA[model].provider == "groq"
     ]
-    # Open Router Models
+    # Open Router Modelleri
     + [
         BlockCost(
             cost_type=BlockCostType.RUN,
@@ -144,7 +143,7 @@ LLM_COST = (
     ]
 )
 
-# =============== This is the exhaustive list of cost for each Block =============== #
+# =============== Her Blok için maliyetin tam listesi =============== #
 
 BLOCK_COSTS: dict[Type[Block], list[BlockCost]] = {
     AIConversationBlock: LLM_COST,

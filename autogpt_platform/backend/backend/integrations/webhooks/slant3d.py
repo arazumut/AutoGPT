@@ -97,3 +97,34 @@ class Slant3DWebhooksManager(BaseWebhooksManager):
             f"Warning: Manual deregistration required for webhook {webhook.id}"
         )
         pass
+        async def _update_webhook(
+            self,
+            webhook: integrations.Webhook,
+            credentials: Credentials,
+            events: list[str],
+            ingress_url: str,
+            secret: str,
+        ) -> None:
+            """Update an existing webhook with Slant3D"""
+
+            if not isinstance(credentials, APIKeyCredentials):
+                raise ValueError("API key is required to update a webhook")
+
+            headers = {
+                "api-key": credentials.api_key.get_secret_value(),
+                "Content-Type": "application/json",
+            }
+
+            payload = {"endPoint": ingress_url}
+
+            response = requests.put(
+                f"{self.BASE_URL}/customer/webhookSubscribe/{webhook.id}",
+                headers=headers,
+                json=payload,
+            )
+
+            if not response.ok:
+                error = response.json().get("error", "Unknown error")
+                raise RuntimeError(f"Failed to update webhook: {error}")
+
+            logger.info(f"Webhook {webhook.id} updated successfully")

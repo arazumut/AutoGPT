@@ -34,12 +34,12 @@ class GithubWebhooksManager(BaseWebhooksManager):
     ) -> tuple[dict, str]:
         if not (event_type := request.headers.get("X-GitHub-Event")):
             raise HTTPException(
-                status_code=400, detail="X-GitHub-Event header is missing!"
+                status_code=400, detail="X-GitHub-Event başlığı eksik!"
             )
 
         if not (signature_header := request.headers.get("X-Hub-Signature-256")):
             raise HTTPException(
-                status_code=403, detail="X-Hub-Signature-256 header is missing!"
+                status_code=403, detail="X-Hub-Signature-256 başlığı eksik!"
             )
 
         payload_body = await request.body()
@@ -50,7 +50,7 @@ class GithubWebhooksManager(BaseWebhooksManager):
 
         if not hmac.compare_digest(expected_signature, signature_header):
             raise HTTPException(
-                status_code=403, detail="Request signatures didn't match!"
+                status_code=403, detail="İstek imzaları eşleşmedi!"
             )
 
         payload = await request.json()
@@ -63,7 +63,7 @@ class GithubWebhooksManager(BaseWebhooksManager):
         self, webhook: integrations.Webhook, credentials: Credentials | None
     ) -> None:
         if not credentials:
-            raise ValueError("Credentials are required but were not passed")
+            raise ValueError("Kimlik bilgileri gerekli ancak iletilmedi")
 
         headers = {
             **self.GITHUB_API_DEFAULT_HEADERS,
@@ -77,7 +77,7 @@ class GithubWebhooksManager(BaseWebhooksManager):
 
         if response.status_code != 204:
             error_msg = extract_github_error_msg(response)
-            raise ValueError(f"Failed to ping GitHub webhook: {error_msg}")
+            raise ValueError(f"GitHub webhook ping başarısız: {error_msg}")
 
     async def _register_webhook(
         self,
@@ -89,9 +89,9 @@ class GithubWebhooksManager(BaseWebhooksManager):
         secret: str,
     ) -> tuple[str, dict]:
         if webhook_type == self.WebhookType.REPO and resource.count("/") > 1:
-            raise ValueError("Invalid repo format: expected 'owner/repo'")
+            raise ValueError("Geçersiz repo formatı: 'owner/repo' bekleniyor")
 
-        # Extract main event, e.g. `pull_request.opened` -> `pull_request`
+        # Ana olayı çıkar, örn. `pull_request.opened` -> `pull_request`
         github_events = list({event.split(".")[0] for event in events})
 
         headers = {
@@ -121,10 +121,10 @@ class GithubWebhooksManager(BaseWebhooksManager):
             if "not found" in error_msg.lower():
                 error_msg = (
                     f"{error_msg} "
-                    "(Make sure the GitHub account or API key has 'repo' or "
-                    f"webhook create permissions to '{resource}')"
+                    "(GitHub hesabının veya API anahtarının '{resource}' için 'repo' veya "
+                    "webhook oluşturma izinlerine sahip olduğundan emin olun)"
                 )
-            raise ValueError(f"Failed to create GitHub webhook: {error_msg}")
+            raise ValueError(f"GitHub webhook oluşturma başarısız: {error_msg}")
 
         webhook_id = response.json()["id"]
         config = response.json()["config"]
@@ -137,7 +137,7 @@ class GithubWebhooksManager(BaseWebhooksManager):
         webhook_type = self.WebhookType(webhook.webhook_type)
         if webhook.credentials_id != credentials.id:
             raise ValueError(
-                f"Webhook #{webhook.id} does not belong to credentials {credentials.id}"
+                f"Webhook #{webhook.id} kimlik bilgileri {credentials.id} ile uyuşmuyor"
             )
 
         headers = {
@@ -150,17 +150,17 @@ class GithubWebhooksManager(BaseWebhooksManager):
             delete_url = f"{self.GITHUB_API_URL}/repos/{repo}/hooks/{webhook.provider_webhook_id}"  # noqa
         else:
             raise NotImplementedError(
-                f"Unsupported webhook type '{webhook.webhook_type}'"
+                f"Desteklenmeyen webhook türü '{webhook.webhook_type}'"
             )
 
         response = requests.delete(delete_url, headers=headers)
 
         if response.status_code not in [204, 404]:
-            # 204 means successful deletion, 404 means the webhook was already deleted
+            # 204 başarılı silme, 404 webhook zaten silinmiş demektir
             error_msg = extract_github_error_msg(response)
-            raise ValueError(f"Failed to delete GitHub webhook: {error_msg}")
+            raise ValueError(f"GitHub webhook silme başarısız: {error_msg}")
 
-        # If we reach here, the webhook was successfully deleted or didn't exist
+        # Buraya ulaşırsak, webhook başarıyla silinmiş veya zaten mevcut değil
 
 
 # --8<-- [end:GithubWebhooksManager]

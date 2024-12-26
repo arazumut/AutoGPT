@@ -20,16 +20,16 @@ from backend.util.settings import Config
 
 def _extract_schema_from_url(database_url) -> tuple[str, str]:
     """
-    Extracts the schema from the DATABASE_URL and returns the schema and cleaned URL.
+    DATABASE_URL'den şemayı çıkarır ve şema ile temizlenmiş URL'yi döndürür.
     """
     parsed_url = urlparse(database_url)
     query_params = parse_qs(parsed_url.query)
 
-    # Extract the 'schema' parameter
+    # 'schema' parametresini çıkar
     schema_list = query_params.pop("schema", None)
     schema = schema_list[0] if schema_list else "public"
 
-    # Reconstruct the query string without the 'schema' parameter
+    # 'schema' parametresi olmadan sorgu stringini yeniden oluştur
     new_query = urlencode(query_params, doseq=True)
     new_parsed_url = parsed_url._replace(query=new_query)
     database_url_clean = str(urlunparse(new_parsed_url))
@@ -46,11 +46,11 @@ def log(msg, **kwargs):
 
 
 def job_listener(event):
-    """Logs job execution outcomes for better monitoring."""
+    """İş yürütme sonuçlarını daha iyi izleme için kaydeder."""
     if event.exception:
-        log(f"Job {event.job_id} failed.")
+        log(f"İş {event.job_id} başarısız oldu.")
     else:
-        log(f"Job {event.job_id} completed successfully.")
+        log(f"İş {event.job_id} başarıyla tamamlandı.")
 
 
 @thread_cached
@@ -61,12 +61,12 @@ def get_execution_client() -> ExecutionManager:
 def execute_graph(**kwargs):
     args = JobArgs(**kwargs)
     try:
-        log(f"Executing recurring job for graph #{args.graph_id}")
+        log(f"Grafik #{args.graph_id} için yinelenen iş yürütülüyor")
         get_execution_client().add_execution(
             args.graph_id, args.input_data, args.user_id
         )
     except Exception as e:
-        logger.exception(f"Error executing graph {args.graph_id}: {e}")
+        logger.exception(f"Grafik {args.graph_id} yürütülürken hata: {e}")
 
 
 class JobArgs(BaseModel):
@@ -140,21 +140,21 @@ class ExecutionScheduler(AppService):
             kwargs=job_args.model_dump(),
             replace_existing=True,
         )
-        log(f"Added job {job.id} with cron schedule '{cron}' input data: {input_data}")
+        log(f"İş {job.id} '{cron}' cron programı ile eklendi, giriş verisi: {input_data}")
         return JobInfo.from_db(job_args, job)
 
     @expose
     def delete_schedule(self, schedule_id: str, user_id: str) -> JobInfo:
         job = self.scheduler.get_job(schedule_id)
         if not job:
-            log(f"Job {schedule_id} not found.")
-            raise ValueError(f"Job #{schedule_id} not found.")
+            log(f"İş {schedule_id} bulunamadı.")
+            raise ValueError(f"İş #{schedule_id} bulunamadı.")
 
         job_args = JobArgs(**job.kwargs)
         if job_args.user_id != user_id:
-            raise ValueError("User ID does not match the job's user ID.")
+            raise ValueError("Kullanıcı ID'si işin kullanıcı ID'si ile eşleşmiyor.")
 
-        log(f"Deleting job {schedule_id}")
+        log(f"İş {schedule_id} siliniyor")
         job.remove()
 
         return JobInfo.from_db(job_args, job)

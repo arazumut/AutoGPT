@@ -9,76 +9,63 @@ from backend.integrations.providers import ProviderName
 logger = logging.getLogger(__name__)
 
 
-class BaseOAuthHandler(ABC):
-    # --8<-- [start:BaseOAuthHandler1]
-    PROVIDER_NAME: ClassVar[ProviderName]
-    DEFAULT_SCOPES: ClassVar[list[str]] = []
-    # --8<-- [end:BaseOAuthHandler1]
+class TemelOAuthHandler(ABC):
+    # Sağlayıcı adı ve varsayılan kapsamlar
+    SAGLAYICI_ADI: ClassVar[ProviderName]
+    VARSAYILAN_KAPSAMLAR: ClassVar[list[str]] = []
 
     @abstractmethod
-    # --8<-- [start:BaseOAuthHandler2]
-    def __init__(self, client_id: str, client_secret: str, redirect_uri: str): ...
-
-    # --8<-- [end:BaseOAuthHandler2]
-
-    @abstractmethod
-    # --8<-- [start:BaseOAuthHandler3]
-    def get_login_url(self, scopes: list[str], state: str) -> str:
-        # --8<-- [end:BaseOAuthHandler3]
-        """Constructs a login URL that the user can be redirected to"""
-        ...
+    def __init__(self, client_id: str, client_secret: str, redirect_uri: str):
+        """OAuthHandler başlatıcı metodu"""
+        pass
 
     @abstractmethod
-    # --8<-- [start:BaseOAuthHandler4]
-    def exchange_code_for_tokens(
-        self, code: str, scopes: list[str]
-    ) -> OAuth2Credentials:
-        # --8<-- [end:BaseOAuthHandler4]
-        """Exchanges the acquired authorization code from login for a set of tokens"""
-        ...
+    def giris_url_al(self, kapsamlar: list[str], durum: str) -> str:
+        """Kullanıcının yönlendirilebileceği bir giriş URL'si oluşturur"""
+        pass
 
     @abstractmethod
-    # --8<-- [start:BaseOAuthHandler5]
-    def _refresh_tokens(self, credentials: OAuth2Credentials) -> OAuth2Credentials:
-        # --8<-- [end:BaseOAuthHandler5]
-        """Implements the token refresh mechanism"""
-        ...
+    def kodu_tokenlara_degistir(self, kod: str, kapsamlar: list[str]) -> OAuth2Credentials:
+        """Girişten alınan yetkilendirme kodunu bir dizi token ile değiştirir"""
+        pass
 
     @abstractmethod
-    # --8<-- [start:BaseOAuthHandler6]
-    def revoke_tokens(self, credentials: OAuth2Credentials) -> bool:
-        # --8<-- [end:BaseOAuthHandler6]
-        """Revokes the given token at provider,
-        returns False provider does not support it"""
-        ...
+    def _tokenlari_yenile(self, kimlik_bilgileri: OAuth2Credentials) -> OAuth2Credentials:
+        """Token yenileme mekanizmasını uygular"""
+        pass
 
-    def refresh_tokens(self, credentials: OAuth2Credentials) -> OAuth2Credentials:
-        if credentials.provider != self.PROVIDER_NAME:
+    @abstractmethod
+    def tokenlari_iptal_et(self, kimlik_bilgileri: OAuth2Credentials) -> bool:
+        """Verilen tokeni sağlayıcıda iptal eder,
+        sağlayıcı desteklemiyorsa False döner"""
+        pass
+
+    def tokenlari_yenile(self, kimlik_bilgileri: OAuth2Credentials) -> OAuth2Credentials:
+        if kimlik_bilgileri.saglayici != self.SAGLAYICI_ADI:
             raise ValueError(
-                f"{self.__class__.__name__} can not refresh tokens "
-                f"for other provider '{credentials.provider}'"
+                f"{self.__class__.__name__} diğer sağlayıcı '{kimlik_bilgileri.saglayici}' için token yenileyemez"
             )
-        return self._refresh_tokens(credentials)
+        return self._tokenlari_yenile(kimlik_bilgileri)
 
-    def get_access_token(self, credentials: OAuth2Credentials) -> str:
-        """Returns a valid access token, refreshing it first if needed"""
-        if self.needs_refresh(credentials):
-            credentials = self.refresh_tokens(credentials)
-        return credentials.access_token.get_secret_value()
+    def erisim_tokeni_al(self, kimlik_bilgileri: OAuth2Credentials) -> str:
+        """Geçerli bir erişim tokeni döner, gerekirse önce yeniler"""
+        if self.yenileme_gerekli_mi(kimlik_bilgileri):
+            kimlik_bilgileri = self.tokenlari_yenile(kimlik_bilgileri)
+        return kimlik_bilgileri.erisim_tokeni.get_secret_value()
 
-    def needs_refresh(self, credentials: OAuth2Credentials) -> bool:
-        """Indicates whether the given tokens need to be refreshed"""
+    def yenileme_gerekli_mi(self, kimlik_bilgileri: OAuth2Credentials) -> bool:
+        """Verilen tokenların yenilenmesi gerekip gerekmediğini belirtir"""
         return (
-            credentials.access_token_expires_at is not None
-            and credentials.access_token_expires_at < int(time.time()) + 300
+            kimlik_bilgileri.erisim_tokeni_sona_erme_zamani is not None
+            and kimlik_bilgileri.erisim_tokeni_sona_erme_zamani < int(time.time()) + 300
         )
 
-    def handle_default_scopes(self, scopes: list[str]) -> list[str]:
-        """Handles the default scopes for the provider"""
-        # If scopes are empty, use the default scopes for the provider
-        if not scopes:
+    def varsayilan_kapsamlari_isle(self, kapsamlar: list[str]) -> list[str]:
+        """Sağlayıcı için varsayılan kapsamları işler"""
+        # Kapsamlar boşsa, sağlayıcı için varsayılan kapsamları kullan
+        if not kapsamlar:
             logger.debug(
-                f"Using default scopes for provider {self.PROVIDER_NAME.value}"
+                f"{self.SAGLAYICI_ADI.value} sağlayıcısı için varsayılan kapsamlar kullanılıyor"
             )
-            scopes = self.DEFAULT_SCOPES
-        return scopes
+            kapsamlar = self.VARSAYILAN_KAPSAMLAR
+        return kapsamlar

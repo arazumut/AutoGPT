@@ -35,7 +35,7 @@ class BaseRedisEventBus(Generic[M], ABC):
     def _serialize_message(self, item: M, channel_key: str) -> tuple[str, str]:
         message = json.dumps(item.model_dump(), cls=DateTimeEncoder)
         channel_name = f"{self.event_bus_name}/{channel_key}"
-        logger.info(f"[{channel_name}] Publishing an event to Redis {message}")
+        logger.info(f"[{channel_name}] Redis'e bir olay yayınlanıyor {message}")
         return message, channel_name
 
     def _deserialize_message(self, msg: Any, channel_key: str) -> M | None:
@@ -44,10 +44,10 @@ class BaseRedisEventBus(Generic[M], ABC):
             return None
         try:
             data = json.loads(msg["data"])
-            logger.info(f"Consuming an event from Redis {data}")
+            logger.info(f"Redis'ten bir olay tüketiliyor {data}")
             return self.Model(**data)
         except Exception as e:
-            logger.error(f"Failed to parse event result from Redis {msg} {e}")
+            logger.error(f"Redis'ten olay sonucunu ayrıştırma başarısız {msg} {e}")
 
     def _get_pubsub_channel(
         self, connection: redis.Redis | redis.AsyncRedis, channel_key: str

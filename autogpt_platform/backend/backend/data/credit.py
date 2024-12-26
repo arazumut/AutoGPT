@@ -13,222 +13,217 @@ from backend.util.settings import Config
 
 config = Config()
 
-
-class UserCreditBase(ABC):
-    def __init__(self, num_user_credits_refill: int):
-        self.num_user_credits_refill = num_user_credits_refill
+class KullaniciKrediTemel(ABC):
+    def __init__(self, aylik_kredi_doldurma_miktari: int):
+        self.aylik_kredi_doldurma_miktari = aylik_kredi_doldurma_miktari
 
     @abstractmethod
-    async def get_or_refill_credit(self, user_id: str) -> int:
+    async def kredi_al_veya_doldur(self, kullanici_id: str) -> int:
         """
-        Get the current credit for the user and refill if no transaction has been made in the current cycle.
+        Kullanıcının mevcut kredisini al ve eğer mevcut döngüde işlem yapılmamışsa doldur.
 
         Returns:
-            int: The current credit for the user.
+            int: Kullanıcının mevcut kredisi.
         """
         pass
 
     @abstractmethod
-    async def spend_credits(
+    async def kredi_harcamak(
         self,
-        user_id: str,
-        user_credit: int,
-        block_id: str,
-        input_data: BlockInput,
-        data_size: float,
-        run_time: float,
+        kullanici_id: str,
+        kullanici_kredisi: int,
+        blok_id: str,
+        girdi_verisi: BlockInput,
+        veri_boyutu: float,
+        calisma_suresi: float,
     ) -> int:
         """
-        Spend the credits for the user based on the block usage.
+        Blok kullanımı bazında kullanıcının kredilerini harca.
 
         Args:
-            user_id (str): The user ID.
-            user_credit (int): The current credit for the user.
-            block_id (str): The block ID.
-            input_data (BlockInput): The input data for the block.
-            data_size (float): The size of the data being processed.
-            run_time (float): The time taken to run the block.
+            kullanici_id (str): Kullanıcı ID'si.
+            kullanici_kredisi (int): Kullanıcının mevcut kredisi.
+            blok_id (str): Blok ID'si.
+            girdi_verisi (BlockInput): Blok için girdi verisi.
+            veri_boyutu (float): İşlenen verinin boyutu.
+            calisma_suresi (float): Blokun çalıştığı süre.
 
         Returns:
-            int: amount of credit spent
+            int: Harcanan kredi miktarı.
         """
         pass
 
     @abstractmethod
-    async def top_up_credits(self, user_id: str, amount: int):
+    async def kredi_yukle(self, kullanici_id: str, miktar: int):
         """
-        Top up the credits for the user.
+        Kullanıcıya kredi yükle.
 
         Args:
-            user_id (str): The user ID.
-            amount (int): The amount to top up.
+            kullanici_id (str): Kullanıcı ID'si.
+            miktar (int): Yüklenecek miktar.
         """
         pass
 
-
-class UserCredit(UserCreditBase):
-    async def get_or_refill_credit(self, user_id: str) -> int:
-        cur_time = self.time_now()
-        cur_month = cur_time.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        nxt_month = (
-            cur_month.replace(month=cur_month.month + 1)
-            if cur_month.month < 12
-            else cur_month.replace(year=cur_month.year + 1, month=1)
+class KullaniciKredi(KullaniciKrediTemel):
+    async def kredi_al_veya_doldur(self, kullanici_id: str) -> int:
+        su_an = self.su_an()
+        bu_ay = su_an.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        gelecek_ay = (
+            bu_ay.replace(month=bu_ay.month + 1)
+            if bu_ay.month < 12
+            else bu_ay.replace(year=bu_ay.year + 1, month=1)
         )
 
-        user_credit = await CreditTransaction.prisma().group_by(
+        kullanici_kredisi = await CreditTransaction.prisma().group_by(
             by=["userId"],
             sum={"amount": True},
             where={
-                "userId": user_id,
-                "createdAt": {"gte": cur_month, "lt": nxt_month},
+                "userId": kullanici_id,
+                "createdAt": {"gte": bu_ay, "lt": gelecek_ay},
                 "isActive": True,
             },
         )
 
-        if user_credit:
-            credit_sum = user_credit[0].get("_sum") or {}
-            return credit_sum.get("amount", 0)
+        if kullanici_kredisi:
+            kredi_toplami = kullanici_kredisi[0].get("_sum") or {}
+            return kredi_toplami.get("amount", 0)
 
-        key = f"MONTHLY-CREDIT-TOP-UP-{cur_month}"
+        anahtar = f"AYLIK-KREDI-YUKLEME-{bu_ay}"
 
         try:
             await CreditTransaction.prisma().create(
                 data={
-                    "amount": self.num_user_credits_refill,
+                    "amount": self.aylik_kredi_doldurma_miktari,
                     "type": CreditTransactionType.TOP_UP,
-                    "userId": user_id,
-                    "transactionKey": key,
-                    "createdAt": self.time_now(),
+                    "userId": kullanici_id,
+                    "transactionKey": anahtar,
+                    "createdAt": self.su_an(),
                 }
             )
         except UniqueViolationError:
-            pass  # Already refilled this month
+            pass  # Bu ay zaten doldurulmuş
 
-        return self.num_user_credits_refill
+        return self.aylik_kredi_doldurma_miktari
 
     @staticmethod
-    def time_now():
+    def su_an():
         return datetime.now(timezone.utc)
 
-    def _block_usage_cost(
+    def _blok_kullanim_maliyeti(
         self,
-        block: Block,
-        input_data: BlockInput,
-        data_size: float,
-        run_time: float,
+        blok: Block,
+        girdi_verisi: BlockInput,
+        veri_boyutu: float,
+        calisma_suresi: float,
     ) -> tuple[int, BlockInput]:
-        block_costs = BLOCK_COSTS.get(type(block))
-        if not block_costs:
+        blok_maliyetleri = BLOCK_COSTS.get(type(blok))
+        if not blok_maliyetleri:
             return 0, {}
 
-        for block_cost in block_costs:
-            if not self._is_cost_filter_match(block_cost.cost_filter, input_data):
+        for blok_maliyeti in blok_maliyetleri:
+            if not self._maliyet_filtre_eslesmesi(blok_maliyeti.cost_filter, girdi_verisi):
                 continue
 
-            if block_cost.cost_type == BlockCostType.RUN:
-                return block_cost.cost_amount, block_cost.cost_filter
+            if blok_maliyeti.cost_type == BlockCostType.RUN:
+                return blok_maliyeti.cost_amount, blok_maliyeti.cost_filter
 
-            if block_cost.cost_type == BlockCostType.SECOND:
+            if blok_maliyeti.cost_type == BlockCostType.SECOND:
                 return (
-                    int(run_time * block_cost.cost_amount),
-                    block_cost.cost_filter,
+                    int(calisma_suresi * blok_maliyeti.cost_amount),
+                    blok_maliyeti.cost_filter,
                 )
 
-            if block_cost.cost_type == BlockCostType.BYTE:
+            if blok_maliyeti.cost_type == BlockCostType.BYTE:
                 return (
-                    int(data_size * block_cost.cost_amount),
-                    block_cost.cost_filter,
+                    int(veri_boyutu * blok_maliyeti.cost_amount),
+                    blok_maliyeti.cost_filter,
                 )
 
         return 0, {}
 
-    def _is_cost_filter_match(
-        self, cost_filter: BlockInput, input_data: BlockInput
+    def _maliyet_filtre_eslesmesi(
+        self, maliyet_filtre: BlockInput, girdi_verisi: BlockInput
     ) -> bool:
         """
-        Filter rules:
-          - If costFilter is an object, then check if costFilter is the subset of inputValues
-          - Otherwise, check if costFilter is equal to inputValues.
-          - Undefined, null, and empty string are considered as equal.
+        Filtre kuralları:
+          - Eğer maliyetFiltre bir obje ise, maliyetFiltre'nin girdiVerisi'nin alt kümesi olup olmadığını kontrol et.
+          - Aksi takdirde, maliyetFiltre'nin girdiVerisi'ne eşit olup olmadığını kontrol et.
+          - Tanımsız, null ve boş string eşit kabul edilir.
         """
-        if not isinstance(cost_filter, dict) or not isinstance(input_data, dict):
-            return cost_filter == input_data
+        if not isinstance(maliyet_filtre, dict) or not isinstance(girdi_verisi, dict):
+            return maliyet_filtre == girdi_verisi
 
         return all(
-            (not input_data.get(k) and not v)
-            or (input_data.get(k) and self._is_cost_filter_match(v, input_data[k]))
-            for k, v in cost_filter.items()
+            (not girdi_verisi.get(k) and not v)
+            or (girdi_verisi.get(k) and self._maliyet_filtre_eslesmesi(v, girdi_verisi[k]))
+            for k, v in maliyet_filtre.items()
         )
 
-    async def spend_credits(
+    async def kredi_harcamak(
         self,
-        user_id: str,
-        user_credit: int,
-        block_id: str,
-        input_data: BlockInput,
-        data_size: float,
-        run_time: float,
-        validate_balance: bool = True,
+        kullanici_id: str,
+        kullanici_kredisi: int,
+        blok_id: str,
+        girdi_verisi: BlockInput,
+        veri_boyutu: float,
+        calisma_suresi: float,
+        bakiye_dogrulama: bool = True,
     ) -> int:
-        block = get_block(block_id)
-        if not block:
-            raise ValueError(f"Block not found: {block_id}")
+        blok = get_block(blok_id)
+        if not blok:
+            raise ValueError(f"Blok bulunamadı: {blok_id}")
 
-        cost, matching_filter = self._block_usage_cost(
-            block=block, input_data=input_data, data_size=data_size, run_time=run_time
+        maliyet, eslesen_filtre = self._blok_kullanim_maliyeti(
+            blok=blok, girdi_verisi=girdi_verisi, veri_boyutu=veri_boyutu, calisma_suresi=calisma_suresi
         )
-        if cost <= 0:
+        if maliyet <= 0:
             return 0
 
-        if validate_balance and user_credit < cost:
-            raise ValueError(f"Insufficient credit: {user_credit} < {cost}")
+        if bakiye_dogrulama and kullanici_kredisi < maliyet:
+            raise ValueError(f"Yetersiz kredi: {kullanici_kredisi} < {maliyet}")
 
         await CreditTransaction.prisma().create(
             data={
-                "userId": user_id,
-                "amount": -cost,
+                "userId": kullanici_id,
+                "amount": -maliyet,
                 "type": CreditTransactionType.USAGE,
-                "blockId": block.id,
+                "blockId": blok.id,
                 "metadata": Json(
                     {
-                        "block": block.name,
-                        "input": matching_filter,
+                        "block": blok.name,
+                        "input": eslesen_filtre,
                     }
                 ),
-                "createdAt": self.time_now(),
+                "createdAt": self.su_an(),
             }
         )
-        return cost
+        return maliyet
 
-    async def top_up_credits(self, user_id: str, amount: int):
+    async def kredi_yukle(self, kullanici_id: str, miktar: int):
         await CreditTransaction.prisma().create(
             data={
-                "userId": user_id,
-                "amount": amount,
+                "userId": kullanici_id,
+                "amount": miktar,
                 "type": CreditTransactionType.TOP_UP,
-                "createdAt": self.time_now(),
+                "createdAt": self.su_an(),
             }
         )
 
-
-class DisabledUserCredit(UserCreditBase):
-    async def get_or_refill_credit(self, *args, **kwargs) -> int:
+class DevreDisiKullaniciKredi(KullaniciKrediTemel):
+    async def kredi_al_veya_doldur(self, *args, **kwargs) -> int:
         return 0
 
-    async def spend_credits(self, *args, **kwargs) -> int:
+    async def kredi_harcamak(self, *args, **kwargs) -> int:
         return 0
 
-    async def top_up_credits(self, *args, **kwargs):
+    async def kredi_yukle(self, *args, **kwargs):
         pass
 
-
-def get_user_credit_model() -> UserCreditBase:
+def kullanici_kredi_modeli_al() -> KullaniciKrediTemel:
     if config.enable_credit.lower() == "true":
-        return UserCredit(config.num_user_credits_refill)
+        return KullaniciKredi(config.num_user_credits_refill)
     else:
-        return DisabledUserCredit(0)
+        return DevreDisiKullaniciKredi(0)
 
-
-def get_block_costs() -> dict[str, list[BlockCost]]:
-    return {block().id: costs for block, costs in BLOCK_COSTS.items()}
+def blok_maliyetlerini_al() -> dict[str, list[BlockCost]]:
+    return {blok().id: maliyetler for blok, maliyetler in BLOCK_COSTS.items()}

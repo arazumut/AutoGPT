@@ -14,69 +14,65 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-
 async def on_graph_activate(
     graph: "GraphModel", get_credentials: Callable[[str], "Credentials | None"]
 ):
     """
-    Hook to be called when a graph is activated/created.
+    Bir grafik etkinleştirildiğinde/oluşturulduğunda çağrılacak kanca.
 
-    ⚠️ Assuming node entities are not re-used between graph versions, ⚠️
-    this hook calls `on_node_activate` on all nodes in this graph.
+    ⚠️ Düğüm varlıklarının grafik sürümleri arasında yeniden kullanılmadığını varsayarak, ⚠️
+    bu kanca, bu grafikteki tüm düğümler üzerinde `on_node_activate` çağrısı yapar.
 
-    Params:
+    Parametreler:
         get_credentials: `credentials_id` -> Credentials
     """
-    # Compare nodes in new_graph_version with previous_graph_version
-    updated_nodes = []
-    for new_node in graph.nodes:
-        node_credentials = None
-        if creds_meta := new_node.input_default.get(CREDENTIALS_FIELD_NAME):
-            node_credentials = get_credentials(creds_meta["id"])
-            if not node_credentials:
+    güncellenmiş_düğümler = []
+    for yeni_düğüm in graph.nodes:
+        düğüm_kimlik_bilgileri = None
+        if creds_meta := yeni_düğüm.input_default.get(CREDENTIALS_FIELD_NAME):
+            düğüm_kimlik_bilgileri = get_credentials(creds_meta["id"])
+            if not düğüm_kimlik_bilgileri:
                 raise ValueError(
-                    f"Node #{new_node.id} updated with non-existent "
-                    f"credentials #{node_credentials}"
+                    f"Düğüm #{yeni_düğüm.id} mevcut olmayan "
+                    f"kimlik bilgileri #{düğüm_kimlik_bilgileri} ile güncellendi"
                 )
 
-        updated_node = await on_node_activate(
-            graph.user_id, new_node, credentials=node_credentials
+        güncellenmiş_düğüm = await on_node_activate(
+            graph.user_id, yeni_düğüm, credentials=düğüm_kimlik_bilgileri
         )
-        updated_nodes.append(updated_node)
+        güncellenmiş_düğümler.append(güncellenmiş_düğüm)
 
-    graph.nodes = updated_nodes
+    graph.nodes = güncellenmiş_düğümler
     return graph
-
 
 async def on_graph_deactivate(
     graph: "GraphModel", get_credentials: Callable[[str], "Credentials | None"]
 ):
     """
-    Hook to be called when a graph is deactivated/deleted.
+    Bir grafik devre dışı bırakıldığında/silindiğinde çağrılacak kanca.
 
-    ⚠️ Assuming node entities are not re-used between graph versions, ⚠️
-    this hook calls `on_node_deactivate` on all nodes in `graph`.
+    ⚠️ Düğüm varlıklarının grafik sürümleri arasında yeniden kullanılmadığını varsayarak, ⚠️
+    bu kanca, `graph` içindeki tüm düğümler üzerinde `on_node_deactivate` çağrısı yapar.
 
-    Params:
+    Parametreler:
         get_credentials: `credentials_id` -> Credentials
     """
-    updated_nodes = []
-    for node in graph.nodes:
-        node_credentials = None
-        if creds_meta := node.input_default.get(CREDENTIALS_FIELD_NAME):
-            node_credentials = get_credentials(creds_meta["id"])
-            if not node_credentials:
+    güncellenmiş_düğümler = []
+    for düğüm in graph.nodes:
+        düğüm_kimlik_bilgileri = None
+        if creds_meta := düğüm.input_default.get(CREDENTIALS_FIELD_NAME):
+            düğüm_kimlik_bilgileri = get_credentials(creds_meta["id"])
+            if not düğüm_kimlik_bilgileri:
                 logger.error(
-                    f"Node #{node.id} referenced non-existent "
-                    f"credentials #{creds_meta['id']}"
+                    f"Düğüm #{düğüm.id} mevcut olmayan "
+                    f"kimlik bilgileri #{creds_meta['id']} referans aldı"
                 )
 
-        updated_node = await on_node_deactivate(node, credentials=node_credentials)
-        updated_nodes.append(updated_node)
+        güncellenmiş_düğüm = await on_node_deactivate(düğüm, credentials=düğüm_kimlik_bilgileri)
+        güncellenmiş_düğümler.append(güncellenmiş_düğüm)
 
-    graph.nodes = updated_nodes
+    graph.nodes = güncellenmiş_düğümler
     return graph
-
 
 async def on_node_activate(
     user_id: str,
@@ -84,12 +80,12 @@ async def on_node_activate(
     *,
     credentials: Optional["Credentials"] = None,
 ) -> "NodeModel":
-    """Hook to be called when the node is activated/created"""
+    """Düğüm etkinleştirildiğinde/oluşturulduğunda çağrılacak kanca"""
 
     block = get_block(node.block_id)
     if not block:
         raise ValueError(
-            f"Node #{node.id} is instance of unknown block #{node.block_id}"
+            f"Düğüm #{node.id} bilinmeyen blok #{node.block_id} örneğidir"
         )
 
     if not block.webhook_config:
@@ -98,12 +94,12 @@ async def on_node_activate(
     provider = block.webhook_config.provider
     if provider not in WEBHOOK_MANAGERS_BY_NAME:
         raise ValueError(
-            f"Block #{block.id} has webhook_config for provider {provider} "
-            "which does not support webhooks"
+            f"Blok #{block.id} webhook_config sağlayıcısı {provider} "
+            "webhookları desteklemiyor"
         )
 
     logger.debug(
-        f"Activating webhook node #{node.id} with config {block.webhook_config}"
+        f"Webhook düğümü #{node.id} yapılandırma ile etkinleştiriliyor {block.webhook_config}"
     )
 
     webhooks_manager = WEBHOOK_MANAGERS_BY_NAME[provider]()
@@ -114,10 +110,10 @@ async def on_node_activate(
         except KeyError:
             resource = None
         logger.debug(
-            f"Constructed resource string {resource} from input {node.input_default}"
+            f"Girdi {node.input_default} ile kaynak dizesi {resource} oluşturuldu"
         )
     else:
-        resource = ""  # not relevant for manual webhooks
+        resource = ""  # manuel webhooks için geçerli değil
 
     needs_credentials = CREDENTIALS_FIELD_NAME in block.input_schema.model_fields
     credentials_meta = (
@@ -140,26 +136,26 @@ async def on_node_activate(
     )
 
     if has_everything_for_webhook and resource is not None:
-        logger.debug(f"Node #{node} has everything for a webhook!")
+        logger.debug(f"Düğüm #{node} webhook için her şeye sahip!")
         if credentials_meta and not credentials:
             raise ValueError(
-                f"Cannot set up webhook for node #{node.id}: "
-                f"credentials #{credentials_meta['id']} not available"
+                f"Düğüm #{node.id} için webhook ayarlanamıyor: "
+                f"kimlik bilgileri #{credentials_meta['id']} mevcut değil"
             )
 
         if event_filter_input_name:
-            # Shape of the event filter is enforced in Block.__init__
+            # Olay filtresinin şekli Block.__init__ içinde zorlanır
             event_filter = cast(dict, node.input_default[event_filter_input_name])
             events = [
                 block.webhook_config.event_format.format(event=event)
                 for event, enabled in event_filter.items()
                 if enabled is True
             ]
-            logger.debug(f"Webhook events to subscribe to: {', '.join(events)}")
+            logger.debug(f"Abone olunacak webhook olayları: {', '.join(events)}")
         else:
             events = []
 
-        # Find/make and attach a suitable webhook to the node
+        # Düğüme uygun bir webhook bul ve ekle
         if auto_setup_webhook:
             assert credentials is not None
             new_webhook = await webhooks_manager.get_suitable_auto_webhook(
@@ -170,20 +166,19 @@ async def on_node_activate(
                 events,
             )
         else:
-            # Manual webhook -> no credentials -> don't register but do create
+            # Manuel webhook -> kimlik bilgisi yok -> kaydetme ama oluştur
             new_webhook = await webhooks_manager.get_manual_webhook(
                 user_id,
                 node.graph_id,
                 block.webhook_config.webhook_type,
                 events,
             )
-        logger.debug(f"Acquired webhook: {new_webhook}")
+        logger.debug(f"Edinilen webhook: {new_webhook}")
         return await set_node_webhook(node.id, new_webhook.id)
     else:
-        logger.debug(f"Node #{node.id} does not have everything for a webhook")
+        logger.debug(f"Düğüm #{node.id} webhook için her şeye sahip değil")
 
     return node
-
 
 async def on_node_deactivate(
     node: "NodeModel",
@@ -191,13 +186,13 @@ async def on_node_deactivate(
     credentials: Optional["Credentials"] = None,
     webhooks_manager: Optional["BaseWebhooksManager"] = None,
 ) -> "NodeModel":
-    """Hook to be called when node is deactivated/deleted"""
+    """Düğüm devre dışı bırakıldığında/silindiğinde çağrılacak kanca"""
 
-    logger.debug(f"Deactivating node #{node.id}")
+    logger.debug(f"Düğüm #{node.id} devre dışı bırakılıyor")
     block = get_block(node.block_id)
     if not block:
         raise ValueError(
-            f"Node #{node.id} is instance of unknown block #{node.block_id}"
+            f"Düğüm #{node.id} bilinmeyen blok #{node.block_id} örneğidir"
         )
 
     if not block.webhook_config:
@@ -206,27 +201,26 @@ async def on_node_deactivate(
     provider = block.webhook_config.provider
     if provider not in WEBHOOK_MANAGERS_BY_NAME:
         raise ValueError(
-            f"Block #{block.id} has webhook_config for provider {provider} "
-            "which does not support webhooks"
+            f"Blok #{block.id} webhook_config sağlayıcısı {provider} "
+            "webhookları desteklemiyor"
         )
 
     webhooks_manager = WEBHOOK_MANAGERS_BY_NAME[provider]()
 
     if node.webhook_id:
-        logger.debug(f"Node #{node.id} has webhook_id {node.webhook_id}")
+        logger.debug(f"Düğüm #{node.id} webhook_id {node.webhook_id} var")
         if not node.webhook:
-            logger.error(f"Node #{node.id} has webhook_id but no webhook object")
-            raise ValueError("node.webhook not included")
+            logger.error(f"Düğüm #{node.id} webhook_id var ama webhook nesnesi yok")
+            raise ValueError("node.webhook dahil edilmedi")
 
-        # Detach webhook from node
-        logger.debug(f"Detaching webhook from node #{node.id}")
-        updated_node = await set_node_webhook(node.id, None)
+        # Düğümden webhook'u ayır
+        logger.debug(f"Düğüm #{node.id} webhook'tan ayrılıyor")
+        güncellenmiş_düğüm = await set_node_webhook(node.id, None)
 
-        # Prune and deregister the webhook if it is no longer used anywhere
+        # Webhook başka bir yerde kullanılmıyorsa buda ve kaydını sil
         webhook = node.webhook
         logger.debug(
-            f"Pruning{' and deregistering' if credentials else ''} "
-            f"webhook #{webhook.id}"
+            f"Webhook #{webhook.id} budanıyor{' ve kaydı siliniyor' if credentials else ''}"
         )
         await webhooks_manager.prune_webhook_if_dangling(webhook.id, credentials)
         if (
@@ -234,11 +228,11 @@ async def on_node_deactivate(
             and not credentials
         ):
             logger.warning(
-                f"Cannot deregister webhook #{webhook.id}: credentials "
-                f"#{webhook.credentials_id} not available "
+                f"Webhook #{webhook.id} kaydı silinemiyor: kimlik bilgileri "
+                f"#{webhook.credentials_id} mevcut değil "
                 f"({webhook.provider.value} webhook ID: {webhook.provider_webhook_id})"
             )
-        return updated_node
+        return güncellenmiş_düğüm
 
-    logger.debug(f"Node #{node.id} has no webhook_id, returning")
+    logger.debug(f"Düğüm #{node.id} webhook_id yok, geri dönüyor")
     return node

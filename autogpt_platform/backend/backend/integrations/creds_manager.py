@@ -20,36 +20,23 @@ logger = logging.getLogger(__name__)
 settings = Settings()
 
 
-class IntegrationCredentialsManager:
+class EntegrasyonKimlikBilgileriYöneticisi:
     """
-    Handles the lifecycle of integration credentials.
-    - Automatically refreshes requested credentials if needed.
-    - Uses locking mechanisms to ensure system-wide consistency and
-      prevent invalidation of in-use tokens.
+    Entegrasyon kimlik bilgilerinin yaşam döngüsünü yönetir.
+    - Gerektiğinde istenen kimlik bilgilerini otomatik olarak yeniler.
+    - Sistem genelinde tutarlılığı sağlamak ve kullanımda olan tokenlerin geçersiz kılınmasını önlemek için kilitleme mekanizmaları kullanır.
 
-    ### ⚠️ Gotcha
-    With `acquire(..)`, credentials can only be in use in one place at a time (e.g. one
-    block execution).
+    ### ⚠️ Dikkat
+    `acquire(..)` ile, kimlik bilgileri aynı anda yalnızca bir yerde kullanılabilir (örneğin, bir blok yürütme).
 
-    ### Locking mechanism
-    - Because *getting* credentials can result in a refresh (= *invalidation* +
-      *replacement*) of the stored credentials, *getting* is an operation that
-      potentially requires read/write access.
-    - Checking whether a token has to be refreshed is subject to an additional `refresh`
-      scoped lock to prevent unnecessary sequential refreshes when multiple executions
-      try to access the same credentials simultaneously.
-    - We MUST lock credentials while in use to prevent them from being invalidated while
-      they are in use, e.g. because they are being refreshed by a different part
-      of the system.
-    - The `!time_sensitive` lock in `acquire(..)` is part of a two-tier locking
-      mechanism in which *updating* gets priority over *getting* credentials.
-      This is to prevent a long queue of waiting *get* requests from blocking essential
-      credential refreshes or user-initiated updates.
+    ### Kilitleme mekanizması
+    - Kimlik bilgilerini *almak*, saklanan kimlik bilgilerinin yenilenmesiyle (= *geçersiz kılma* + *değiştirme*) sonuçlanabileceğinden, *almak* okuma/yazma erişimi gerektiren bir işlemdir.
+    - Bir tokenin yenilenmesi gerekip gerekmediğini kontrol etmek, aynı kimlik bilgilerine aynı anda erişmeye çalışan birden fazla yürütme sırasında gereksiz ardışık yenilemeleri önlemek için ek bir `refresh` kapsamlı kilide tabidir.
+    - Kimlik bilgilerini kullanımda iken kilitlemeliyiz, böylece sistemin başka bir kısmı tarafından yenilenirken geçersiz kılınmalarını önleriz.
+    - `!time_sensitive` kilidi `acquire(..)` içinde, *güncellemenin* kimlik bilgilerini *almaktan* öncelikli olduğu iki aşamalı bir kilitleme mekanizmasının parçasıdır.
+      Bu, uzun bir bekleyen *alma* istekleri kuyruğunun, önemli kimlik bilgisi yenilemelerini veya kullanıcı tarafından başlatılan güncellemeleri engellemesini önlemek içindir.
 
-    It is possible to implement a reader/writer locking system where either multiple
-    readers or a single writer can have simultaneous access, but this would add a lot of
-    complexity to the mechanism. I don't expect the current ("simple") mechanism to
-    cause so much latency that it's worth implementing.
+    Aynı anda birden fazla okuyucunun veya tek bir yazarın erişimine izin veren bir okuyucu/yazar kilitleme sistemi uygulamak mümkündür, ancak bu mekanizmaya çok fazla karmaşıklık katacaktır. Mevcut ("basit") mekanizmanın, uygulanmaya değer olacak kadar gecikmeye neden olmasını beklemiyorum.
     """
 
     def __init__(self):
@@ -57,113 +44,110 @@ class IntegrationCredentialsManager:
         self._locks = RedisKeyedMutex(redis_conn)
         self.store = IntegrationCredentialsStore()
 
-    def create(self, user_id: str, credentials: Credentials) -> None:
-        return self.store.add_creds(user_id, credentials)
+    def oluştur(self, kullanıcı_id: str, kimlik_bilgileri: Credentials) -> None:
+        return self.store.add_creds(kullanıcı_id, kimlik_bilgileri)
 
-    def exists(self, user_id: str, credentials_id: str) -> bool:
-        return self.store.get_creds_by_id(user_id, credentials_id) is not None
+    def var_mı(self, kullanıcı_id: str, kimlik_bilgileri_id: str) -> bool:
+        return self.store.get_creds_by_id(kullanıcı_id, kimlik_bilgileri_id) is not None
 
-    def get(
-        self, user_id: str, credentials_id: str, lock: bool = True
+    def al(
+        self, kullanıcı_id: str, kimlik_bilgileri_id: str, kilit: bool = True
     ) -> Credentials | None:
-        credentials = self.store.get_creds_by_id(user_id, credentials_id)
-        if not credentials:
+        kimlik_bilgileri = self.store.get_creds_by_id(kullanıcı_id, kimlik_bilgileri_id)
+        if not kimlik_bilgileri:
             return None
 
-        # Refresh OAuth credentials if needed
-        if credentials.type == "oauth2" and credentials.access_token_expires_at:
+        # OAuth kimlik bilgilerini gerektiğinde yenile
+        if kimlik_bilgileri.type == "oauth2" and kimlik_bilgileri.access_token_expires_at:
             logger.debug(
-                f"Credentials #{credentials.id} expire at "
-                f"{datetime.fromtimestamp(credentials.access_token_expires_at)}; "
-                f"current time is {datetime.now()}"
+                f"Kimlik Bilgileri #{kimlik_bilgileri.id} şu tarihte sona eriyor: "
+                f"{datetime.fromtimestamp(kimlik_bilgileri.access_token_expires_at)}; "
+                f"mevcut zaman {datetime.now()}"
             )
 
-            with self._locked(user_id, credentials_id, "refresh"):
-                oauth_handler = _get_provider_oauth_handler(credentials.provider)
-                if oauth_handler.needs_refresh(credentials):
+            with self._kilitli(kullanıcı_id, kimlik_bilgileri_id, "refresh"):
+                oauth_handler = _sağlayıcı_oauth_handler_al(kimlik_bilgileri.provider)
+                if oauth_handler.yenileme_gerekli_mi(kimlik_bilgileri):
                     logger.debug(
-                        f"Refreshing '{credentials.provider}' "
-                        f"credentials #{credentials.id}"
+                        f"'{kimlik_bilgileri.provider}' kimlik bilgileri #{kimlik_bilgileri.id} yenileniyor"
                     )
-                    _lock = None
-                    if lock:
-                        # Wait until the credentials are no longer in use anywhere
-                        _lock = self._acquire_lock(user_id, credentials_id)
+                    _kilit = None
+                    if kilit:
+                        # Kimlik bilgileri başka bir yerde kullanımda değilken bekle
+                        _kilit = self._kilit_al(kullanıcı_id, kimlik_bilgileri_id)
 
-                    fresh_credentials = oauth_handler.refresh_tokens(credentials)
-                    self.store.update_creds(user_id, fresh_credentials)
-                    if _lock:
-                        _lock.release()
+                    yeni_kimlik_bilgileri = oauth_handler.tokenleri_yenile(kimlik_bilgileri)
+                    self.store.update_creds(kullanıcı_id, yeni_kimlik_bilgileri)
+                    if _kilit:
+                        _kilit.release()
 
-                    credentials = fresh_credentials
+                    kimlik_bilgileri = yeni_kimlik_bilgileri
         else:
-            logger.debug(f"Credentials #{credentials.id} never expire")
+            logger.debug(f"Kimlik Bilgileri #{kimlik_bilgileri.id} hiç sona ermiyor")
 
-        return credentials
+        return kimlik_bilgileri
 
-    def acquire(
-        self, user_id: str, credentials_id: str
+    def edin(
+        self, kullanıcı_id: str, kimlik_bilgileri_id: str
     ) -> tuple[Credentials, RedisLock]:
         """
-        ⚠️ WARNING: this locks credentials system-wide and blocks both acquiring
-        and updating them elsewhere until the lock is released.
-        See the class docstring for more info.
+        ⚠️ UYARI: bu, kimlik bilgilerini sistem genelinde kilitler ve kilit serbest bırakılana kadar başka yerlerde edinme ve güncellemeyi engeller.
+        Daha fazla bilgi için sınıf docstring'ine bakın.
         """
-        # Use a low-priority (!time_sensitive) locking queue on top of the general lock
-        # to allow priority access for refreshing/updating the tokens.
-        with self._locked(user_id, credentials_id, "!time_sensitive"):
-            lock = self._acquire_lock(user_id, credentials_id)
-        credentials = self.get(user_id, credentials_id, lock=False)
-        if not credentials:
+        # Düşük öncelikli (!time_sensitive) bir kilitleme kuyruğu kullanarak genel kilidin üstünde, token yenileme/güncelleme için öncelikli erişim sağlar.
+        with self._kilitli(kullanıcı_id, kimlik_bilgileri_id, "!time_sensitive"):
+            kilit = self._kilit_al(kullanıcı_id, kimlik_bilgileri_id)
+        kimlik_bilgileri = self.al(kullanıcı_id, kimlik_bilgileri_id, kilit=False)
+        if not kimlik_bilgileri:
             raise ValueError(
-                f"Credentials #{credentials_id} for user #{user_id} not found"
+                f"Kullanıcı #{kullanıcı_id} için Kimlik Bilgileri #{kimlik_bilgileri_id} bulunamadı"
             )
-        return credentials, lock
+        return kimlik_bilgileri, kilit
 
-    def update(self, user_id: str, updated: Credentials) -> None:
-        with self._locked(user_id, updated.id):
-            self.store.update_creds(user_id, updated)
+    def güncelle(self, kullanıcı_id: str, güncellenmiş: Credentials) -> None:
+        with self._kilitli(kullanıcı_id, güncellenmiş.id):
+            self.store.update_creds(kullanıcı_id, güncellenmiş)
 
-    def delete(self, user_id: str, credentials_id: str) -> None:
-        with self._locked(user_id, credentials_id):
-            self.store.delete_creds_by_id(user_id, credentials_id)
+    def sil(self, kullanıcı_id: str, kimlik_bilgileri_id: str) -> None:
+        with self._kilitli(kullanıcı_id, kimlik_bilgileri_id):
+            self.store.delete_creds_by_id(kullanıcı_id, kimlik_bilgileri_id)
 
-    # -- Locking utilities -- #
+    # -- Kilitleme yardımcıları -- #
 
-    def _acquire_lock(self, user_id: str, credentials_id: str, *args: str) -> RedisLock:
-        key = (
-            f"user:{user_id}",
-            f"credentials:{credentials_id}",
+    def _kilit_al(self, kullanıcı_id: str, kimlik_bilgileri_id: str, *args: str) -> RedisLock:
+        anahtar = (
+            f"kullanıcı:{kullanıcı_id}",
+            f"kimlik_bilgileri:{kimlik_bilgileri_id}",
             *args,
         )
-        return self._locks.acquire(key)
+        return self._locks.acquire(anahtar)
 
     @contextmanager
-    def _locked(self, user_id: str, credentials_id: str, *args: str):
-        lock = self._acquire_lock(user_id, credentials_id, *args)
+    def _kilitli(self, kullanıcı_id: str, kimlik_bilgileri_id: str, *args: str):
+        kilit = self._kilit_al(kullanıcı_id, kimlik_bilgileri_id, *args)
         try:
             yield
         finally:
-            lock.release()
+            kilit.release()
 
-    def release_all_locks(self):
-        """Call this on process termination to ensure all locks are released"""
+    def tüm_kilitleri_serbest_bırak(self):
+        """Tüm kilitlerin serbest bırakıldığından emin olmak için bu işlemi süreç sonlandırmada çağırın"""
         self._locks.release_all_locks()
         self.store.locks.release_all_locks()
 
 
-def _get_provider_oauth_handler(provider_name: str) -> "BaseOAuthHandler":
-    if provider_name not in HANDLERS_BY_NAME:
-        raise KeyError(f"Unknown provider '{provider_name}'")
+def _sağlayıcı_oauth_handler_al(sağlayıcı_adı: str) -> "BaseOAuthHandler":
+    if sağlayıcı_adı not in HANDLERS_BY_NAME:
+        raise KeyError(f"Bilinmeyen sağlayıcı '{sağlayıcı_adı}'")
 
-    client_id = getattr(settings.secrets, f"{provider_name}_client_id")
-    client_secret = getattr(settings.secrets, f"{provider_name}_client_secret")
+    client_id = getattr(settings.secrets, f"{sağlayıcı_adı}_client_id")
+    client_secret = getattr(settings.secrets, f"{sağlayıcı_adı}_client_secret")
     if not (client_id and client_secret):
         raise MissingConfigError(
-            f"Integration with provider '{provider_name}' is not configured",
+            f"'{sağlayıcı_adı}' sağlayıcısı ile entegrasyon yapılandırılmamış",
         )
 
-    handler_class = HANDLERS_BY_NAME[provider_name]
+    handler_class = HANDLERS_BY_NAME[sağlayıcı_adı]
     frontend_base_url = (
         settings.config.frontend_base_url or settings.config.platform_base_url
     )

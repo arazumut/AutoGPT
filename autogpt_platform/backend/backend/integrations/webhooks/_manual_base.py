@@ -18,7 +18,7 @@ class ManualWebhookManagerBase(BaseWebhooksManager[WT]):
         ingress_url: str,
         secret: str,
     ) -> tuple[str, dict]:
-        print(ingress_url)  # FIXME: pass URL to user in front end
+        print(ingress_url)  # FIXME: URL'i ön uçta kullanıcıya ilet
 
         return "", {}
 

@@ -12,15 +12,15 @@ from backend.util.encryption import JSONCryptor
 
 logger = logging.getLogger(__name__)
 
-
+# Kullanıcıyı al veya oluştur
 async def get_or_create_user(user_data: dict) -> User:
     user_id = user_data.get("sub")
     if not user_id:
-        raise HTTPException(status_code=401, detail="User ID not found in token")
+        raise HTTPException(status_code=401, detail="Token'da Kullanıcı ID'si bulunamadı")
 
     user_email = user_data.get("email")
     if not user_email:
-        raise HTTPException(status_code=401, detail="Email not found in token")
+        raise HTTPException(status_code=401, detail="Token'da Email bulunamadı")
 
     user = await prisma.user.find_unique(where={"id": user_id})
     if not user:
@@ -33,12 +33,12 @@ async def get_or_create_user(user_data: dict) -> User:
         )
     return User.model_validate(user)
 
-
+# Kullanıcıyı ID ile al
 async def get_user_by_id(user_id: str) -> Optional[User]:
     user = await prisma.user.find_unique(where={"id": user_id})
     return User.model_validate(user) if user else None
 
-
+# Varsayılan kullanıcı oluştur
 async def create_default_user() -> Optional[User]:
     user = await prisma.user.find_unique(where={"id": DEFAULT_USER_ID})
     if not user:
@@ -46,12 +46,12 @@ async def create_default_user() -> Optional[User]:
             data={
                 "id": DEFAULT_USER_ID,
                 "email": "default@example.com",
-                "name": "Default User",
+                "name": "Varsayılan Kullanıcı",
             }
         )
     return User.model_validate(user)
 
-
+# Kullanıcı metadata'sını al
 async def get_user_metadata(user_id: str) -> UserMetadata:
     user = await User.prisma().find_unique_or_raise(
         where={"id": user_id},
@@ -60,14 +60,14 @@ async def get_user_metadata(user_id: str) -> UserMetadata:
     metadata = cast(UserMetadataRaw, user.metadata)
     return UserMetadata.model_validate(metadata)
 
-
+# Kullanıcı metadata'sını güncelle
 async def update_user_metadata(user_id: str, metadata: UserMetadata):
     await User.prisma().update(
         where={"id": user_id},
         data={"metadata": Json(metadata.model_dump())},
     )
 
-
+# Kullanıcı entegrasyonlarını al
 async def get_user_integrations(user_id: str) -> UserIntegrations:
     user = await User.prisma().find_unique_or_raise(
         where={"id": user_id},
@@ -81,7 +81,7 @@ async def get_user_integrations(user_id: str) -> UserIntegrations:
             JSONCryptor().decrypt(encrypted_integrations)
         )
 
-
+# Kullanıcı entegrasyonlarını güncelle
 async def update_user_integrations(user_id: str, data: UserIntegrations):
     encrypted_data = JSONCryptor().encrypt(data.model_dump())
     await User.prisma().update(
@@ -89,41 +89,41 @@ async def update_user_integrations(user_id: str, data: UserIntegrations):
         data={"integrations": encrypted_data},
     )
 
-
+# Kullanıcı entegrasyonlarını migrate ve şifrele
 async def migrate_and_encrypt_user_integrations():
-    """Migrate integration credentials and OAuth states from metadata to integrations column."""
+    """Entegrasyon kimlik bilgilerini ve OAuth durumlarını metadata'dan entegrasyonlar sütununa taşı."""
     users = await User.prisma().find_many(
         where={
             "metadata": {
                 "path": ["integration_credentials"],
-                "not": Json({"a": "yolo"}),  # bogus value works to check if key exists
+                "not": Json({"a": "yolo"}),  # anahtarın var olup olmadığını kontrol etmek için sahte değer
             }  # type: ignore
         }
     )
-    logger.info(f"Migrating integration credentials for {len(users)} users")
+    logger.info(f"{len(users)} kullanıcı için entegrasyon kimlik bilgileri taşınıyor")
 
     for user in users:
         raw_metadata = cast(UserMetadataRaw, user.metadata)
         metadata = UserMetadata.model_validate(raw_metadata)
 
-        # Get existing integrations data
+        # Mevcut entegrasyon verilerini al
         integrations = await get_user_integrations(user_id=user.id)
 
-        # Copy credentials and oauth states from metadata if they exist
+        # Kimlik bilgilerini ve oauth durumlarını metadata'dan kopyala
         if metadata.integration_credentials and not integrations.credentials:
             integrations.credentials = metadata.integration_credentials
         if metadata.integration_oauth_states:
             integrations.oauth_states = metadata.integration_oauth_states
 
-        # Save to integrations column
+        # Entegrasyonlar sütununa kaydet
         await update_user_integrations(user_id=user.id, data=integrations)
 
-        # Remove from metadata
+        # Metadata'dan kaldır
         raw_metadata = dict(raw_metadata)
         raw_metadata.pop("integration_credentials", None)
         raw_metadata.pop("integration_oauth_states", None)
 
-        # Update metadata without integration data
+        # Entegrasyon verisi olmadan metadata'yı güncelle
         await User.prisma().update(
             where={"id": user.id},
             data={"metadata": Json(raw_metadata)},

@@ -21,175 +21,163 @@ WT = TypeVar("WT", bound=StrEnum)
 
 
 class BaseWebhooksManager(ABC, Generic[WT]):
-    # --8<-- [start:BaseWebhooksManager1]
     PROVIDER_NAME: ClassVar[ProviderName]
-    # --8<-- [end:BaseWebhooksManager1]
 
     WebhookType: WT
 
-    async def get_suitable_auto_webhook(
+    async def uygun_otomatik_webhooku_al(
         self,
-        user_id: str,
-        credentials: Credentials,
-        webhook_type: WT,
-        resource: str,
-        events: list[str],
+        kullanici_id: str,
+        kimlik_bilgileri: Credentials,
+        webhook_tipi: WT,
+        kaynak: str,
+        olaylar: list[str],
     ) -> integrations.Webhook:
         if not app_config.platform_base_url:
             raise MissingConfigError(
-                "PLATFORM_BASE_URL must be set to use Webhook functionality"
+                "PLATFORM_BASE_URL, Webhook işlevselliğini kullanmak için ayarlanmalıdır"
             )
 
         if webhook := await integrations.find_webhook_by_credentials_and_props(
-            credentials.id, webhook_type, resource, events
+            kimlik_bilgileri.id, webhook_tipi, kaynak, olaylar
         ):
             return webhook
-        return await self._create_webhook(
-            user_id, webhook_type, events, resource, credentials
+        return await self._webhook_olustur(
+            kullanici_id, webhook_tipi, olaylar, kaynak, kimlik_bilgileri
         )
 
-    async def get_manual_webhook(
+    async def manuel_webhook_al(
         self,
-        user_id: str,
-        graph_id: str,
-        webhook_type: WT,
-        events: list[str],
+        kullanici_id: str,
+        grafik_id: str,
+        webhook_tipi: WT,
+        olaylar: list[str],
     ):
-        if current_webhook := await integrations.find_webhook_by_graph_and_props(
-            graph_id, self.PROVIDER_NAME, webhook_type, events
+        if mevcut_webhook := await integrations.find_webhook_by_graph_and_props(
+            grafik_id, self.PROVIDER_NAME, webhook_tipi, olaylar
         ):
-            return current_webhook
-        return await self._create_webhook(
-            user_id,
-            webhook_type,
-            events,
-            register=False,
+            return mevcut_webhook
+        return await self._webhook_olustur(
+            kullanici_id,
+            webhook_tipi,
+            olaylar,
+            kaydet=False,
         )
 
-    async def prune_webhook_if_dangling(
-        self, webhook_id: str, credentials: Optional[Credentials]
+    async def bos_webhooku_temizle(
+        self, webhook_id: str, kimlik_bilgileri: Optional[Credentials]
     ) -> bool:
         webhook = await integrations.get_webhook(webhook_id)
         if webhook.attached_nodes is None:
-            raise ValueError("Error retrieving webhook including attached nodes")
+            raise ValueError("Bağlı düğümleri içeren webhook alınırken hata oluştu")
         if webhook.attached_nodes:
-            # Don't prune webhook if in use
+            # Kullanımda ise webhooku temizleme
             return False
 
-        if credentials:
-            await self._deregister_webhook(webhook, credentials)
+        if kimlik_bilgileri:
+            await self._webhooku_deregister_et(webhook, kimlik_bilgileri)
         await integrations.delete_webhook(webhook.id)
         return True
 
-    # --8<-- [start:BaseWebhooksManager3]
     @classmethod
     @abstractmethod
-    async def validate_payload(
-        cls, webhook: integrations.Webhook, request: Request
+    async def payload_dogrula(
+        cls, webhook: integrations.Webhook, istek: Request
     ) -> tuple[dict, str]:
         """
-        Validates an incoming webhook request and returns its payload and type.
+        Gelen bir webhook isteğini doğrular ve yükünü ve türünü döndürür.
 
-        Params:
-            webhook: Object representing the configured webhook and its properties in our system.
-            request: Incoming FastAPI `Request`
+        Parametreler:
+            webhook: Sistemimizde yapılandırılmış webhook ve özelliklerini temsil eden nesne.
+            istek: Gelen FastAPI `Request`
 
-        Returns:
-            dict: The validated payload
-            str: The event type associated with the payload
+        Döndürür:
+            dict: Doğrulanmış yük
+            str: Yük ile ilişkili olay türü
         """
 
-    # --8<-- [end:BaseWebhooksManager3]
-
-    # --8<-- [start:BaseWebhooksManager5]
-    async def trigger_ping(
-        self, webhook: integrations.Webhook, credentials: Credentials | None
+    async def ping_tetikle(
+        self, webhook: integrations.Webhook, kimlik_bilgileri: Credentials | None
     ) -> None:
         """
-        Triggers a ping to the given webhook.
+        Belirtilen webhooka bir ping tetikler.
 
-        Raises:
-            NotImplementedError: if the provider doesn't support pinging
+        Hata:
+            NotImplementedError: Sağlayıcı pinglemeyi desteklemiyorsa
         """
-        # --8<-- [end:BaseWebhooksManager5]
-        raise NotImplementedError(f"{self.__class__.__name__} doesn't support pinging")
+        raise NotImplementedError(f"{self.__class__.__name__} pinglemeyi desteklemiyor")
 
-    # --8<-- [start:BaseWebhooksManager2]
     @abstractmethod
-    async def _register_webhook(
+    async def _webhooku_kaydet(
         self,
-        credentials: Credentials,
-        webhook_type: WT,
-        resource: str,
-        events: list[str],
-        ingress_url: str,
-        secret: str,
+        kimlik_bilgileri: Credentials,
+        webhook_tipi: WT,
+        kaynak: str,
+        olaylar: list[str],
+        giris_url: str,
+        gizli_anahtar: str,
     ) -> tuple[str, dict]:
         """
-        Registers a new webhook with the provider.
+        Sağlayıcı ile yeni bir webhook kaydeder.
 
-        Params:
-            credentials: The credentials with which to create the webhook
-            webhook_type: The provider-specific webhook type to create
-            resource: The resource to receive events for
-            events: The events to subscribe to
-            ingress_url: The ingress URL for webhook payloads
-            secret: Secret used to verify webhook payloads
+        Parametreler:
+            kimlik_bilgileri: Webhook oluşturmak için kullanılacak kimlik bilgileri
+            webhook_tipi: Oluşturulacak sağlayıcıya özgü webhook türü
+            kaynak: Olayları almak için kaynak
+            olaylar: Abone olunacak olaylar
+            giris_url: Webhook yükleri için giriş URL'si
+            gizli_anahtar: Webhook yüklerini doğrulamak için kullanılan gizli anahtar
 
-        Returns:
-            str: Webhook ID assigned by the provider
-            config: Provider-specific configuration for the webhook
+        Döndürür:
+            str: Sağlayıcı tarafından atanan Webhook ID'si
+            dict: Webhook için sağlayıcıya özgü yapılandırma
         """
         ...
 
-    # --8<-- [end:BaseWebhooksManager2]
-
-    # --8<-- [start:BaseWebhooksManager4]
     @abstractmethod
-    async def _deregister_webhook(
-        self, webhook: integrations.Webhook, credentials: Credentials
-    ) -> None: ...
+    async def _webhooku_deregister_et(
+        self, webhook: integrations.Webhook, kimlik_bilgileri: Credentials
+    ) -> None:
+        ...
 
-    # --8<-- [end:BaseWebhooksManager4]
-
-    async def _create_webhook(
+    async def _webhook_olustur(
         self,
-        user_id: str,
-        webhook_type: WT,
-        events: list[str],
-        resource: str = "",
-        credentials: Optional[Credentials] = None,
-        register: bool = True,
+        kullanici_id: str,
+        webhook_tipi: WT,
+        olaylar: list[str],
+        kaynak: str = "",
+        kimlik_bilgileri: Optional[Credentials] = None,
+        kaydet: bool = True,
     ) -> integrations.Webhook:
         if not app_config.platform_base_url:
             raise MissingConfigError(
-                "PLATFORM_BASE_URL must be set to use Webhook functionality"
+                "PLATFORM_BASE_URL, Webhook işlevselliğini kullanmak için ayarlanmalıdır"
             )
 
         id = str(uuid4())
-        secret = secrets.token_hex(32)
-        provider_name = self.PROVIDER_NAME
-        ingress_url = webhook_ingress_url(provider_name=provider_name, webhook_id=id)
-        if register:
-            if not credentials:
-                raise TypeError("credentials are required if register = True")
-            provider_webhook_id, config = await self._register_webhook(
-                credentials, webhook_type, resource, events, ingress_url, secret
+        gizli_anahtar = secrets.token_hex(32)
+        saglayici_adi = self.PROVIDER_NAME
+        giris_url = webhook_ingress_url(provider_name=saglayici_adi, webhook_id=id)
+        if kaydet:
+            if not kimlik_bilgileri:
+                raise TypeError("kaydet = True ise kimlik bilgileri gereklidir")
+            saglayici_webhook_id, config = await self._webhooku_kaydet(
+                kimlik_bilgileri, webhook_tipi, kaynak, olaylar, giris_url, gizli_anahtar
             )
         else:
-            provider_webhook_id, config = "", {}
+            saglayici_webhook_id, config = "", {}
 
         return await integrations.create_webhook(
             integrations.Webhook(
                 id=id,
-                user_id=user_id,
-                provider=provider_name,
-                credentials_id=credentials.id if credentials else "",
-                webhook_type=webhook_type,
-                resource=resource,
-                events=events,
-                provider_webhook_id=provider_webhook_id,
+                user_id=kullanici_id,
+                provider=saglayici_adi,
+                credentials_id=kimlik_bilgileri.id if kimlik_bilgileri else "",
+                webhook_type=webhook_tipi,
+                resource=kaynak,
+                events=olaylar,
+                provider_webhook_id=saglayici_webhook_id,
                 config=config,
-                secret=secret,
+                secret=gizli_anahtar,
             )
         )

@@ -10,11 +10,11 @@ from .base import BaseOAuthHandler
 
 class NotionOAuthHandler(BaseOAuthHandler):
     """
-    Based on the documentation at https://developers.notion.com/docs/authorization
+    https://developers.notion.com/docs/authorization adresindeki dokümantasyona dayanmaktadır.
 
-    Notes:
-    - Notion uses non-expiring access tokens and therefore doesn't have a refresh flow
-    - Notion doesn't use scopes
+    Notlar:
+    - Notion, süresi dolmayan erişim belirteçleri kullanır ve bu nedenle yenileme akışı yoktur
+    - Notion, kapsamları kullanmaz
     """
 
     PROVIDER_NAME = ProviderName.NOTION
@@ -51,7 +51,7 @@ class NotionOAuthHandler(BaseOAuthHandler):
         }
         response = requests.post(self.token_url, json=request_body, headers=headers)
         token_data = response.json()
-        # Email is only available for non-bot users
+        # E-posta yalnızca bot olmayan kullanıcılar için kullanılabilir
         email = (
             token_data["owner"]["person"]["email"]
             if "person" in token_data["owner"]
@@ -65,7 +65,7 @@ class NotionOAuthHandler(BaseOAuthHandler):
             username=email,
             access_token=token_data["access_token"],
             refresh_token=None,
-            access_token_expires_at=None,  # Notion tokens don't expire
+            access_token_expires_at=None,  # Notion belirteçleri süresi dolmaz
             refresh_token_expires_at=None,
             scopes=[],
             metadata={
@@ -78,13 +78,13 @@ class NotionOAuthHandler(BaseOAuthHandler):
         )
 
     def revoke_tokens(self, credentials: OAuth2Credentials) -> bool:
-        # Notion doesn't support token revocation
+        # Notion belirteç iptalini desteklemez
         return False
 
     def _refresh_tokens(self, credentials: OAuth2Credentials) -> OAuth2Credentials:
-        # Notion doesn't support token refresh
+        # Notion belirteç yenilemeyi desteklemez
         return credentials
 
     def needs_refresh(self, credentials: OAuth2Credentials) -> bool:
-        # Notion access tokens don't expire
+        # Notion erişim belirteçleri süresi dolmaz
         return False

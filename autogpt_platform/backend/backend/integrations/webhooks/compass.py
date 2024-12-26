@@ -12,19 +12,19 @@ logger = logging.getLogger(__name__)
 
 
 class CompassWebhookType(StrEnum):
-    TRANSCRIPTION = "transcription"
-    TASK = "task"
+    TRANSKRİPSİYON = "transcription"
+    GÖREV = "task"
 
 
 class CompassWebhookManager(ManualWebhookManagerBase):
-    PROVIDER_NAME = ProviderName.COMPASS
-    WebhookType = CompassWebhookType
+    SAĞLAYICI_ADI = ProviderName.COMPASS
+    WebhookTipi = CompassWebhookType
 
     @classmethod
-    async def validate_payload(
-        cls, webhook: integrations.Webhook, request: Request
+    async def yükü_doğrula(
+        cls, webhook: integrations.Webhook, istek: Request
     ) -> tuple[dict, str]:
-        payload = await request.json()
-        event_type = CompassWebhookType.TRANSCRIPTION  # currently the only type
+        yük = await istek.json()
+        olay_tipi = CompassWebhookType.TRANSKRİPSİYON  # şu anda tek tip
 
-        return payload, event_type
+        return yük, olay_tipi

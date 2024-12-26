@@ -9,17 +9,21 @@ from pydantic import BaseModel, Field, field_validator
 
 from backend.util.retry import conn_retry
 
+# Ortam değişkenlerini yükle
 load_dotenv()
 
+# Prisma şema dosyasını al
 PRISMA_SCHEMA = os.getenv("PRISMA_SCHEMA", "schema.prisma")
 os.environ["PRISMA_SCHEMA_PATH"] = PRISMA_SCHEMA
 
+# Prisma istemcisini oluştur
 prisma = Prisma(auto_register=True)
 
+# Logger'ı yapılandır
 logger = logging.getLogger(__name__)
 
-
-@conn_retry("Prisma", "Acquiring connection")
+# Bağlantı fonksiyonu
+@conn_retry("Prisma", "Bağlantı sağlanıyor")
 async def connect():
     if prisma.is_connected():
         return
@@ -27,17 +31,16 @@ async def connect():
     await prisma.connect()
 
     if not prisma.is_connected():
-        raise ConnectionError("Failed to connect to Prisma.")
+        raise ConnectionError("Prisma'ya bağlanılamadı.")
 
-    # Connection acquired from a pool like Supabase somehow still possibly allows
-    # the db client obtains a connection but still reject query connection afterward.
+    # Bağlantı havuzundan alınan bağlantı, sorgu bağlantısını reddedebilir.
     try:
         await prisma.execute_raw("SELECT 1")
     except Exception as e:
-        raise ConnectionError("Failed to connect to Prisma.") from e
+        raise ConnectionError("Prisma'ya bağlanılamadı.") from e
 
-
-@conn_retry("Prisma", "Releasing connection")
+# Bağlantıyı kesme fonksiyonu
+@conn_retry("Prisma", "Bağlantı kesiliyor")
 async def disconnect():
     if not prisma.is_connected():
         return
@@ -45,19 +48,19 @@ async def disconnect():
     await prisma.disconnect()
 
     if prisma.is_connected():
-        raise ConnectionError("Failed to disconnect from Prisma.")
+        raise ConnectionError("Prisma bağlantısı kesilemedi.")
 
-
+# İşlem yönetici fonksiyonu
 @asynccontextmanager
 async def transaction():
     async with prisma.tx() as tx:
         yield tx
 
-
+# Temel veritabanı modeli
 class BaseDbModel(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
 
     @field_validator("id", mode="before")
     def set_model_id(cls, id: str) -> str:
-        # In case an empty ID is submitted
+        # Boş bir ID gönderilirse
         return id or str(uuid4())

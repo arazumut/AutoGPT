@@ -1,34 +1,39 @@
 import prisma
 
-AGENT_NODE_INCLUDE: prisma.types.AgentNodeInclude = {
-    "Input": True,
-    "Output": True,
+# Ajan Düğümü Dahil Etme
+AJAN_DUGUM_DAHIL_ET: prisma.types.AgentNodeInclude = {
+    "Girdi": True,
+    "Çıktı": True,
     "Webhook": True,
-    "AgentBlock": True,
+    "AjanBlok": True,
 }
 
-AGENT_GRAPH_INCLUDE: prisma.types.AgentGraphInclude = {
-    "AgentNodes": {"include": AGENT_NODE_INCLUDE}  # type: ignore
+# Ajan Grafiği Dahil Etme
+AJAN_GRAFIGI_DAHIL_ET: prisma.types.AgentGraphInclude = {
+    "AjanDüğümleri": {"include": AJAN_DUGUM_DAHIL_ET}  # type: ignore
 }
 
-EXECUTION_RESULT_INCLUDE: prisma.types.AgentNodeExecutionInclude = {
-    "Input": True,
-    "Output": True,
-    "AgentNode": True,
-    "AgentGraphExecution": True,
+# Yürütme Sonucu Dahil Etme
+YURUTME_SONUCU_DAHIL_ET: prisma.types.AgentNodeExecutionInclude = {
+    "Girdi": True,
+    "Çıktı": True,
+    "AjanDüğümü": True,
+    "AjanGrafiğiYürütme": True,
 }
 
-GRAPH_EXECUTION_INCLUDE: prisma.types.AgentGraphExecutionInclude = {
-    "AgentNodeExecutions": {
+# Grafik Yürütme Dahil Etme
+GRAFIK_YURUTME_DAHIL_ET: prisma.types.AgentGraphExecutionInclude = {
+    "AjanDüğümüYürütmeleri": {
         "include": {
-            "Input": True,
-            "Output": True,
-            "AgentNode": True,
-            "AgentGraphExecution": True,
+            "Girdi": True,
+            "Çıktı": True,
+            "AjanDüğümü": True,
+            "AjanGrafiğiYürütme": True,
         }
     }
 }
 
-INTEGRATION_WEBHOOK_INCLUDE: prisma.types.IntegrationWebhookInclude = {
-    "AgentNodes": {"include": AGENT_NODE_INCLUDE}  # type: ignore
+# Entegrasyon Webhook Dahil Etme
+ENTEGRASYON_WEBHOOK_DAHIL_ET: prisma.types.IntegrationWebhookInclude = {
+    "AjanDüğümleri": {"include": AJAN_DUGUM_DAHIL_ET}  # type: ignore
 }

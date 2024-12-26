@@ -60,7 +60,7 @@ class Webhook(BaseDbModel):
         )
 
 
-# --------------------- CRUD functions --------------------- #
+# --------------------- CRUD fonksiyonları --------------------- #
 
 
 async def create_webhook(webhook: Webhook) -> Webhook:
@@ -82,7 +82,7 @@ async def create_webhook(webhook: Webhook) -> Webhook:
 
 
 async def get_webhook(webhook_id: str) -> Webhook:
-    """⚠️ No `user_id` check: DO NOT USE without check in user-facing endpoints."""
+    """⚠️ `user_id` kontrolü yok: Kullanıcıya yönelik uç noktalarda kullanmayın."""
     webhook = await IntegrationWebhook.prisma().find_unique_or_raise(
         where={"id": webhook_id},
         include=INTEGRATION_WEBHOOK_INCLUDE,
@@ -91,9 +91,9 @@ async def get_webhook(webhook_id: str) -> Webhook:
 
 
 async def get_all_webhooks_by_creds(credentials_id: str) -> list[Webhook]:
-    """⚠️ No `user_id` check: DO NOT USE without check in user-facing endpoints."""
+    """⚠️ `user_id` kontrolü yok: Kullanıcıya yönelik uç noktalarda kullanmayın."""
     if not credentials_id:
-        raise ValueError("credentials_id must not be empty")
+        raise ValueError("credentials_id boş olmamalı")
     webhooks = await IntegrationWebhook.prisma().find_many(
         where={"credentialsId": credentials_id},
         include=INTEGRATION_WEBHOOK_INCLUDE,
@@ -104,7 +104,7 @@ async def get_all_webhooks_by_creds(credentials_id: str) -> list[Webhook]:
 async def find_webhook_by_credentials_and_props(
     credentials_id: str, webhook_type: str, resource: str, events: list[str]
 ) -> Webhook | None:
-    """⚠️ No `user_id` check: DO NOT USE without check in user-facing endpoints."""
+    """⚠️ `user_id` kontrolü yok: Kullanıcıya yönelik uç noktalarda kullanmayın."""
     webhook = await IntegrationWebhook.prisma().find_first(
         where={
             "credentialsId": credentials_id,
@@ -120,7 +120,7 @@ async def find_webhook_by_credentials_and_props(
 async def find_webhook_by_graph_and_props(
     graph_id: str, provider: str, webhook_type: str, events: list[str]
 ) -> Webhook | None:
-    """⚠️ No `user_id` check: DO NOT USE without check in user-facing endpoints."""
+    """⚠️ `user_id` kontrolü yok: Kullanıcıya yönelik uç noktalarda kullanmayın."""
     webhook = await IntegrationWebhook.prisma().find_first(
         where={
             "provider": provider,
@@ -134,25 +134,25 @@ async def find_webhook_by_graph_and_props(
 
 
 async def update_webhook_config(webhook_id: str, updated_config: dict) -> Webhook:
-    """⚠️ No `user_id` check: DO NOT USE without check in user-facing endpoints."""
+    """⚠️ `user_id` kontrolü yok: Kullanıcıya yönelik uç noktalarda kullanmayın."""
     _updated_webhook = await IntegrationWebhook.prisma().update(
         where={"id": webhook_id},
         data={"config": Json(updated_config)},
         include=INTEGRATION_WEBHOOK_INCLUDE,
     )
     if _updated_webhook is None:
-        raise ValueError(f"Webhook #{webhook_id} not found")
+        raise ValueError(f"Webhook #{webhook_id} bulunamadı")
     return Webhook.from_db(_updated_webhook)
 
 
 async def delete_webhook(webhook_id: str) -> None:
-    """⚠️ No `user_id` check: DO NOT USE without check in user-facing endpoints."""
+    """⚠️ `user_id` kontrolü yok: Kullanıcıya yönelik uç noktalarda kullanmayın."""
     deleted = await IntegrationWebhook.prisma().delete(where={"id": webhook_id})
     if not deleted:
-        raise ValueError(f"Webhook #{webhook_id} not found")
+        raise ValueError(f"Webhook #{webhook_id} bulunamadı")
 
 
-# --------------------- WEBHOOK EVENTS --------------------- #
+# --------------------- WEBHOOK OLAYLARI --------------------- #
 
 
 class WebhookEvent(BaseDbModel):

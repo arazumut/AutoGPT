@@ -7,27 +7,27 @@ from backend.data.block import BlockInput
 
 
 class BlockCostType(str, Enum):
-    RUN = "run"  # cost X credits per run
-    BYTE = "byte"  # cost X credits per byte
-    SECOND = "second"  # cost X credits per second
-    DOLLAR = "dollar"  # cost X dollars per run
+    RUN = "run"  # çalıştırma başına X kredi maliyeti
+    BYTE = "byte"  # byte başına X kredi maliyeti
+    SECOND = "second"  # saniye başına X kredi maliyeti
+    DOLLAR = "dollar"  # çalıştırma başına X dolar maliyeti
 
 
 class BlockCost(BaseModel):
-    cost_amount: int
-    cost_filter: BlockInput
-    cost_type: BlockCostType
+    maliyet_miktari: int
+    maliyet_filtre: BlockInput
+    maliyet_tipi: BlockCostType
 
     def __init__(
         self,
-        cost_amount: int,
-        cost_type: BlockCostType = BlockCostType.RUN,
-        cost_filter: Optional[BlockInput] = None,
-        **data: Any,
+        maliyet_miktari: int,
+        maliyet_tipi: BlockCostType = BlockCostType.RUN,
+        maliyet_filtre: Optional[BlockInput] = None,
+        **veri: Any,
     ) -> None:
         super().__init__(
-            cost_amount=cost_amount,
-            cost_filter=cost_filter or {},
-            cost_type=cost_type,
-            **data,
+            cost_amount=maliyet_miktari,
+            cost_filter=maliyet_filtre or {},
+            cost_type=maliyet_tipi,
+            **veri,
         )

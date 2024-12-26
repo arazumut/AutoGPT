@@ -16,11 +16,10 @@ from .base import BaseOAuthHandler
 logger = logging.getLogger(__name__)
 
 
-# --8<-- [start:GoogleOAuthHandlerExample]
 class GoogleOAuthHandler(BaseOAuthHandler):
     """
-    Based on the documentation at https://developers.google.com/identity/protocols/oauth2/web-server
-    """  # noqa
+    https://developers.google.com/identity/protocols/oauth2/web-server adresindeki dokümantasyona dayanmaktadır.
+    """
 
     PROVIDER_NAME = ProviderName.GOOGLE
     EMAIL_ENDPOINT = "https://www.googleapis.com/oauth2/v2/userinfo"
@@ -29,7 +28,6 @@ class GoogleOAuthHandler(BaseOAuthHandler):
         "https://www.googleapis.com/auth/userinfo.profile",
         "openid",
     ]
-    # --8<-- [end:GoogleOAuthHandlerExample]
 
     def __init__(self, client_id: str, client_secret: str, redirect_uri: str):
         self.client_id = client_id
@@ -40,7 +38,7 @@ class GoogleOAuthHandler(BaseOAuthHandler):
 
     def get_login_url(self, scopes: list[str], state: str) -> str:
         all_scopes = list(set(scopes + self.DEFAULT_SCOPES))
-        logger.debug(f"Setting up OAuth flow with scopes: {all_scopes}")
+        logger.debug(f"OAuth akışı ayarlanıyor, kapsamlar: {all_scopes}")
         flow = self._setup_oauth_flow(all_scopes)
         flow.redirect_uri = self.redirect_uri
         authorization_url, _ = flow.authorization_url(
@@ -54,37 +52,33 @@ class GoogleOAuthHandler(BaseOAuthHandler):
     def exchange_code_for_tokens(
         self, code: str, scopes: list[str]
     ) -> OAuth2Credentials:
-        logger.debug(f"Exchanging code for tokens with scopes: {scopes}")
+        logger.debug(f"Kod, kapsamlarla birlikte tokenlara değiştiriliyor: {scopes}")
 
-        # Use the scopes from the initial request
         flow = self._setup_oauth_flow(scopes)
         flow.redirect_uri = self.redirect_uri
 
-        logger.debug("Fetching token from Google")
+        logger.debug("Google'dan token alınıyor")
 
-        # Disable scope check in fetch_token
         flow.oauth2session.scope = None
         token = flow.fetch_token(code=code)
-        logger.debug("Token fetched successfully")
+        logger.debug("Token başarıyla alındı")
 
-        # Get the actual scopes granted by Google
         granted_scopes: list[str] = token.get("scope", [])
 
-        logger.debug(f"Scopes granted by Google: {granted_scopes}")
+        logger.debug(f"Google tarafından verilen kapsamlar: {granted_scopes}")
 
         google_creds = flow.credentials
-        logger.debug(f"Received credentials: {google_creds}")
+        logger.debug(f"Alınan kimlik bilgileri: {google_creds}")
 
-        logger.debug("Requesting user email")
+        logger.debug("Kullanıcı e-postası isteniyor")
         username = self._request_email(google_creds)
-        logger.debug(f"User email retrieved: {username}")
+        logger.debug(f"Kullanıcı e-postası alındı: {username}")
 
         assert google_creds.token
         assert google_creds.refresh_token
         assert google_creds.expiry
         assert granted_scopes
 
-        # Create OAuth2Credentials with the granted scopes
         credentials = OAuth2Credentials(
             provider=self.PROVIDER_NAME,
             title=None,
@@ -98,7 +92,7 @@ class GoogleOAuthHandler(BaseOAuthHandler):
             scopes=granted_scopes,
         )
         logger.debug(
-            f"OAuth2Credentials object created successfully with scopes: {credentials.scopes}"
+            f"OAuth2Credentials nesnesi başarıyla oluşturuldu, kapsamlar: {credentials.scopes}"
         )
 
         return credentials
@@ -119,13 +113,12 @@ class GoogleOAuthHandler(BaseOAuthHandler):
         response = session.get(self.EMAIL_ENDPOINT)
         if not response.ok:
             logger.error(
-                f"Failed to get user email. Status code: {response.status_code}"
+                f"Kullanıcı e-postası alınamadı. Durum kodu: {response.status_code}"
             )
             return None
         return response.json()["email"]
 
     def _refresh_tokens(self, credentials: OAuth2Credentials) -> OAuth2Credentials:
-        # Google credentials should ALWAYS have a refresh token
         assert credentials.refresh_token
 
         google_creds = Credentials(
@@ -136,7 +129,6 @@ class GoogleOAuthHandler(BaseOAuthHandler):
             client_secret=self.client_secret,
             scopes=credentials.scopes,
         )
-        # Google's OAuth library is poorly typed so we need some of these:
         assert google_creds.refresh_token
         assert google_creds.scopes
 

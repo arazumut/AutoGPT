@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import Optional, Union
 from urllib.parse import urlencode
 
 from backend.data.model import OAuth2Credentials
@@ -9,20 +9,18 @@ from backend.util.request import requests
 from .base import BaseOAuthHandler
 
 
-# --8<-- [start:GithubOAuthHandlerExample]
 class GitHubOAuthHandler(BaseOAuthHandler):
     """
-    Based on the documentation at:
-    - [Authorizing OAuth apps - GitHub Docs](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps)
-    - [Refreshing user access tokens - GitHub Docs](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/refreshing-user-access-tokens)
+    Belgelere dayanarak:
+    - [OAuth uygulamalarını yetkilendirme - GitHub Belgeleri](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps)
+    - [Kullanıcı erişim belirteçlerini yenileme - GitHub Belgeleri](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/refreshing-user-access-tokens)
 
-    Notes:
-    - By default, token expiration is disabled on GitHub Apps. This means the access
-      token doesn't expire and no refresh token is returned by the authorization flow.
-    - When token expiration gets enabled, any existing tokens will remain non-expiring.
-    - When token expiration gets disabled, token refreshes will return a non-expiring
-      access token *with no refresh token*.
-    """  # noqa
+    Notlar:
+    - Varsayılan olarak, GitHub Uygulamalarında belirteç süresi dolumu devre dışıdır. Bu, erişim
+      belirtecinin süresinin dolmadığı ve yetkilendirme akışı tarafından yenileme belirteci döndürülmediği anlamına gelir.
+    - Belirteç süresi dolumu etkinleştirildiğinde, mevcut belirteçler süresi dolmayan olarak kalacaktır.
+    - Belirteç süresi dolumu devre dışı bırakıldığında, belirteç yenilemeleri *yenileme belirteci olmadan* süresi dolmayan bir erişim belirteci döndürecektir.
+    """
 
     PROVIDER_NAME = ProviderName.GITHUB
 
@@ -50,7 +48,7 @@ class GitHubOAuthHandler(BaseOAuthHandler):
 
     def revoke_tokens(self, credentials: OAuth2Credentials) -> bool:
         if not credentials.access_token:
-            raise ValueError("No access token to revoke")
+            raise ValueError("İptal edilecek erişim belirteci yok")
 
         headers = {
             "Accept": "application/vnd.github+json",
@@ -98,14 +96,10 @@ class GitHubOAuthHandler(BaseOAuthHandler):
             title=current_credentials.title if current_credentials else None,
             username=username,
             access_token=token_data["access_token"],
-            # Token refresh responses have an empty `scope` property (see docs),
-            # so we have to get the scope from the existing credentials object.
             scopes=(
                 token_data.get("scope", "").split(",")
                 or (current_credentials.scopes if current_credentials else [])
             ),
-            # Refresh token and expiration intervals are only given if token expiration
-            # is enabled in the GitHub App's settings.
             refresh_token=token_data.get("refresh_token"),
             access_token_expires_at=(
                 now + expires_in
@@ -122,7 +116,7 @@ class GitHubOAuthHandler(BaseOAuthHandler):
             new_credentials.id = current_credentials.id
         return new_credentials
 
-    def _request_username(self, access_token: str) -> str | None:
+    def _request_username(self, access_token: str) -> Union[str, None]:
         url = "https://api.github.com/user"
         headers = {
             "Accept": "application/vnd.github+json",
@@ -135,8 +129,4 @@ class GitHubOAuthHandler(BaseOAuthHandler):
         if not response.ok:
             return None
 
-        # Get the login (username)
         return response.json().get("login")
-
-
-# --8<-- [end:GithubOAuthHandlerExample]

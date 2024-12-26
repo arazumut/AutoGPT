@@ -1,43 +1,42 @@
 import logging
-
 import prisma.types
 
 logger = logging.getLogger(__name__)
 
-
-async def log_raw_analytics(
-    user_id: str,
-    type: str,
-    data: dict,
-    data_index: str,
+# Ham analitik verilerini kaydetmek için fonksiyon
+async def ham_analitik_veri_kaydet(
+    kullanici_id: str,
+    tur: str,
+    veri: dict,
+    veri_indeksi: str,
 ):
-    details = await prisma.models.AnalyticsDetails.prisma().create(
+    detaylar = await prisma.models.AnalyticsDetails.prisma().create(
         data={
-            "userId": user_id,
-            "type": type,
-            "data": prisma.Json(data),
-            "dataIndex": data_index,
+            "userId": kullanici_id,
+            "type": tur,
+            "data": prisma.Json(veri),
+            "dataIndex": veri_indeksi,
         }
     )
-    return details
+    return detaylar
 
-
-async def log_raw_metric(
-    user_id: str,
-    metric_name: str,
-    metric_value: float,
-    data_string: str,
+# Ham metrik verilerini kaydetmek için fonksiyon
+async def ham_metrik_veri_kaydet(
+    kullanici_id: str,
+    metrik_adi: str,
+    metrik_degeri: float,
+    veri_stringi: str,
 ):
-    if metric_value < 0:
-        raise ValueError("metric_value must be non-negative")
+    if metrik_degeri < 0:
+        raise ValueError("metrik_degeri negatif olamaz")
 
-    result = await prisma.models.AnalyticsMetrics.prisma().create(
+    sonuc = await prisma.models.AnalyticsMetrics.prisma().create(
         data={
-            "value": metric_value,
-            "analyticMetric": metric_name,
-            "userId": user_id,
-            "dataString": data_string,
+            "value": metrik_degeri,
+            "analyticMetric": metrik_adi,
+            "userId": kullanici_id,
+            "dataString": veri_stringi,
         },
     )
 
-    return result
+    return sonuc
