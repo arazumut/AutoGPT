@@ -16,32 +16,32 @@ from backend.integrations.providers import ProviderName
 
 class GetWikipediaSummaryBlock(Block, GetRequest):
     class Input(BlockSchema):
-        topic: str = SchemaField(description="The topic to fetch the summary for")
+        topic: str = SchemaField(description="Özetini almak istediğiniz konu")
 
     class Output(BlockSchema):
-        summary: str = SchemaField(description="The summary of the given topic")
+        summary: str = SchemaField(description="Verilen konunun özeti")
         error: str = SchemaField(
-            description="Error message if the summary cannot be retrieved"
+            description="Özet alınamazsa hata mesajı"
         )
 
     def __init__(self):
         super().__init__(
             id="f5b0f5d0-1862-4d61-94be-3ad0fa772760",
-            description="This block fetches the summary of a given topic from Wikipedia.",
+            description="Bu blok, verilen bir konunun Wikipedia'dan özetini alır.",
             categories={BlockCategory.SEARCH},
             input_schema=GetWikipediaSummaryBlock.Input,
             output_schema=GetWikipediaSummaryBlock.Output,
-            test_input={"topic": "Artificial Intelligence"},
-            test_output=("summary", "summary content"),
-            test_mock={"get_request": lambda url, json: {"extract": "summary content"}},
+            test_input={"topic": "Yapay Zeka"},
+            test_output=("summary", "özet içeriği"),
+            test_mock={"get_request": lambda url, json: {"extract": "özet içeriği"}},
         )
 
     def run(self, input_data: Input, **kwargs) -> BlockOutput:
         topic = input_data.topic
-        url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{topic}"
+        url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{quote(topic)}"
         response = self.get_request(url, json=True)
         if "extract" not in response:
-            raise RuntimeError(f"Unable to parse Wikipedia response: {response}")
+            raise RuntimeError(f"Wikipedia yanıtı parse edilemedi: {response}")
         yield "summary", response["extract"]
 
 
@@ -49,7 +49,7 @@ TEST_CREDENTIALS = APIKeyCredentials(
     id="01234567-89ab-cdef-0123-456789abcdef",
     provider="openweathermap",
     api_key=SecretStr("mock-openweathermap-api-key"),
-    title="Mock OpenWeatherMap API key",
+    title="Mock OpenWeatherMap API anahtarı",
     expires_at=None,
 )
 TEST_CREDENTIALS_INPUT = {
@@ -63,29 +63,28 @@ TEST_CREDENTIALS_INPUT = {
 class GetWeatherInformationBlock(Block, GetRequest):
     class Input(BlockSchema):
         location: str = SchemaField(
-            description="Location to get weather information for"
+            description="Hava durumu bilgisi almak istediğiniz yer"
         )
         credentials: CredentialsMetaInput[
             Literal[ProviderName.OPENWEATHERMAP], Literal["api_key"]
         ] = CredentialsField(
-            description="The OpenWeatherMap integration can be used with "
-            "any API key with sufficient permissions for the blocks it is used on.",
+            description="OpenWeatherMap entegrasyonu, yeterli izinlere sahip herhangi bir API anahtarı ile kullanılabilir.",
         )
         use_celsius: bool = SchemaField(
             default=True,
-            description="Whether to use Celsius or Fahrenheit for temperature",
+            description="Sıcaklık için Celsius mu yoksa Fahrenheit mi kullanılacağını belirtir",
         )
 
     class Output(BlockSchema):
         temperature: str = SchemaField(
-            description="Temperature in the specified location"
+            description="Belirtilen yerdeki sıcaklık"
         )
-        humidity: str = SchemaField(description="Humidity in the specified location")
+        humidity: str = SchemaField(description="Belirtilen yerdeki nem oranı")
         condition: str = SchemaField(
-            description="Weather condition in the specified location"
+            description="Belirtilen yerdeki hava durumu"
         )
         error: str = SchemaField(
-            description="Error message if the weather information cannot be retrieved"
+            description="Hava durumu bilgisi alınamazsa hata mesajı"
         )
 
     def __init__(self):
@@ -93,7 +92,7 @@ class GetWeatherInformationBlock(Block, GetRequest):
             id="f7a8b2c3-6d4e-5f8b-9e7f-6d4e5f8b9e7f",
             input_schema=GetWeatherInformationBlock.Input,
             output_schema=GetWeatherInformationBlock.Output,
-            description="Retrieves weather information for a specified location using OpenWeatherMap API.",
+            description="OpenWeatherMap API kullanarak belirtilen yer için hava durumu bilgilerini alır.",
             test_input={
                 "location": "New York",
                 "use_celsius": True,
@@ -102,12 +101,12 @@ class GetWeatherInformationBlock(Block, GetRequest):
             test_output=[
                 ("temperature", "21.66"),
                 ("humidity", "32"),
-                ("condition", "overcast clouds"),
+                ("condition", "kapalı bulutlar"),
             ],
             test_mock={
                 "get_request": lambda url, json: {
                     "main": {"temp": 21.66, "humidity": 32},
-                    "weather": [{"description": "overcast clouds"}],
+                    "weather": [{"description": "kapalı bulutlar"}],
                 }
             },
             test_credentials=TEST_CREDENTIALS,
@@ -117,7 +116,7 @@ class GetWeatherInformationBlock(Block, GetRequest):
         self, input_data: Input, *, credentials: APIKeyCredentials, **kwargs
     ) -> BlockOutput:
         units = "metric" if input_data.use_celsius else "imperial"
-        api_key = credentials.api_key
+        api_key = credentials.api_key.get_secret_value()
         location = input_data.location
         url = f"http://api.openweathermap.org/data/2.5/weather?q={quote(location)}&appid={api_key}&units={units}"
         weather_data = self.get_request(url, json=True)
@@ -127,4 +126,4 @@ class GetWeatherInformationBlock(Block, GetRequest):
             yield "humidity", str(weather_data["main"]["humidity"])
             yield "condition", weather_data["weather"][0]["description"]
         else:
-            raise RuntimeError(f"Expected keys not found in response: {weather_data}")
+            raise RuntimeError(f"Beklenen anahtarlar yanıt içinde bulunamadı: {weather_data}")

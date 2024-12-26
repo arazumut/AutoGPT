@@ -12,6 +12,7 @@ from backend.data.model import (
 from backend.integrations.providers import ProviderName
 from backend.util.request import requests
 
+# Test için kullanılacak API anahtarı
 TEST_CREDENTIALS = APIKeyCredentials(
     id="01234567-89ab-cdef-0123-456789abcdef",
     provider="unreal_speech",
@@ -26,38 +27,36 @@ TEST_CREDENTIALS_INPUT = {
     "title": TEST_CREDENTIALS.type,
 }
 
-
 class UnrealTextToSpeechBlock(Block):
     class Input(BlockSchema):
         text: str = SchemaField(
-            description="The text to be converted to speech",
-            placeholder="Enter the text you want to convert to speech",
+            description="Konuşmaya dönüştürülecek metin",
+            placeholder="Konuşmaya dönüştürmek istediğiniz metni girin",
         )
         voice_id: str = SchemaField(
-            description="The voice ID to use for text-to-speech conversion",
+            description="Metni konuşmaya dönüştürmek için kullanılacak ses kimliği",
             placeholder="Scarlett",
             default="Scarlett",
         )
         credentials: CredentialsMetaInput[
             Literal[ProviderName.UNREAL_SPEECH], Literal["api_key"]
         ] = CredentialsField(
-            description="The Unreal Speech integration can be used with "
-            "any API key with sufficient permissions for the blocks it is used on.",
+            description="Unreal Speech entegrasyonu, üzerinde kullanıldığı bloklar için yeterli izinlere sahip herhangi bir API anahtarı ile kullanılabilir.",
         )
 
     class Output(BlockSchema):
-        mp3_url: str = SchemaField(description="The URL of the generated MP3 file")
-        error: str = SchemaField(description="Error message if the API call failed")
+        mp3_url: str = SchemaField(description="Oluşturulan MP3 dosyasının URL'si")
+        error: str = SchemaField(description="API çağrısı başarısız olursa hata mesajı")
 
     def __init__(self):
         super().__init__(
             id="4ff1ff6d-cc40-4caa-ae69-011daa20c378",
-            description="Converts text to speech using the Unreal Speech API",
+            description="Unreal Speech API kullanarak metni konuşmaya dönüştürür",
             categories={BlockCategory.AI, BlockCategory.TEXT},
             input_schema=UnrealTextToSpeechBlock.Input,
             output_schema=UnrealTextToSpeechBlock.Output,
             test_input={
-                "text": "This is a test of the text to speech API.",
+                "text": "Bu, metni konuşmaya dönüştürme API'sinin bir testidir.",
                 "voice_id": "Scarlett",
                 "credentials": TEST_CREDENTIALS_INPUT,
             },

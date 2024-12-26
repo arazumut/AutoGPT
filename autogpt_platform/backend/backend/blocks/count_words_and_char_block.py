@@ -1,7 +1,6 @@
 from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
 from backend.data.model import SchemaField
 
-
 class KelimeKarakterSayisiBloku(Block):
     class Girdi(BlockSchema):
         metin: str = SchemaField(

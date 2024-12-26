@@ -2,65 +2,65 @@ from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
 from backend.data.model import ContributorDetails, SchemaField
 
 
-class ReadCsvBlock(Block):
-    class Input(BlockSchema):
-        contents: str = SchemaField(
-            description="The contents of the CSV file to read",
+class CsvOkumaBloğu(Block):
+    class Girdi(BlockSchema):
+        içerik: str = SchemaField(
+            description="Okunacak CSV dosyasının içeriği",
             placeholder="a, b, c\n1,2,3\n4,5,6",
         )
-        delimiter: str = SchemaField(
-            description="The delimiter used in the CSV file",
+        ayraç: str = SchemaField(
+            description="CSV dosyasında kullanılan ayraç",
             default=",",
         )
-        quotechar: str = SchemaField(
-            description="The character used to quote fields",
+        alıntı_karakteri: str = SchemaField(
+            description="Alanları alıntılamak için kullanılan karakter",
             default='"',
         )
-        escapechar: str = SchemaField(
-            description="The character used to escape the delimiter",
+        kaçış_karakteri: str = SchemaField(
+            description="Ayraç karakterini kaçırmak için kullanılan karakter",
             default="\\",
         )
-        has_header: bool = SchemaField(
-            description="Whether the CSV file has a header row",
+        başlık_var_mı: bool = SchemaField(
+            description="CSV dosyasının başlık satırı olup olmadığı",
             default=True,
         )
-        skip_rows: int = SchemaField(
-            description="The number of rows to skip from the start of the file",
+        atlanacak_satırlar: int = SchemaField(
+            description="Dosyanın başından itibaren atlanacak satır sayısı",
             default=0,
         )
-        strip: bool = SchemaField(
-            description="Whether to strip whitespace from the values",
+        boşlukları_sil: bool = SchemaField(
+            description="Değerlerden boşlukları silip silmeyeceği",
             default=True,
         )
-        skip_columns: list[str] = SchemaField(
-            description="The columns to skip from the start of the row",
+        atlanacak_sütunlar: list[str] = SchemaField(
+            description="Satırın başından itibaren atlanacak sütunlar",
             default=[],
         )
 
-    class Output(BlockSchema):
-        row: dict[str, str] = SchemaField(
-            description="The data produced from each row in the CSV file"
+    class Çıktı(BlockSchema):
+        satır: dict[str, str] = SchemaField(
+            description="CSV dosyasındaki her satırdan üretilen veri"
         )
-        all_data: list[dict[str, str]] = SchemaField(
-            description="All the data in the CSV file as a list of rows"
+        tüm_veri: list[dict[str, str]] = SchemaField(
+            description="CSV dosyasındaki tüm veriler, satırların listesi olarak"
         )
 
     def __init__(self):
         super().__init__(
             id="acf7625e-d2cb-4941-bfeb-2819fc6fc015",
-            input_schema=ReadCsvBlock.Input,
-            output_schema=ReadCsvBlock.Output,
-            description="Reads a CSV file and outputs the data as a list of dictionaries and individual rows via rows.",
+            input_schema=CsvOkumaBloğu.Girdi,
+            output_schema=CsvOkumaBloğu.Çıktı,
+            description="Bir CSV dosyasını okur ve verileri satırların listesi ve bireysel satırlar olarak çıktı verir.",
             contributors=[ContributorDetails(name="Nicholas Tindle")],
             categories={BlockCategory.TEXT, BlockCategory.DATA},
             test_input={
-                "contents": "a, b, c\n1,2,3\n4,5,6",
+                "içerik": "a, b, c\n1,2,3\n4,5,6",
             },
             test_output=[
-                ("row", {"a": "1", "b": "2", "c": "3"}),
-                ("row", {"a": "4", "b": "5", "c": "6"}),
+                ("satır", {"a": "1", "b": "2", "c": "3"}),
+                ("satır", {"a": "4", "b": "5", "c": "6"}),
                 (
-                    "all_data",
+                    "tüm_veri",
                     [
                         {"a": "1", "b": "2", "c": "3"},
                         {"a": "4", "b": "5", "c": "6"},
@@ -69,41 +69,41 @@ class ReadCsvBlock(Block):
             ],
         )
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
+    def çalıştır(self, girdi_verisi: Girdi, **kwargs) -> BlockOutput:
         import csv
         from io import StringIO
 
-        csv_file = StringIO(input_data.contents)
-        reader = csv.reader(
-            csv_file,
-            delimiter=input_data.delimiter,
-            quotechar=input_data.quotechar,
-            escapechar=input_data.escapechar,
+        csv_dosyası = StringIO(girdi_verisi.içerik)
+        okuyucu = csv.reader(
+            csv_dosyası,
+            delimiter=girdi_verisi.ayraç,
+            quotechar=girdi_verisi.alıntı_karakteri,
+            escapechar=girdi_verisi.kaçış_karakteri,
         )
 
-        header = None
-        if input_data.has_header:
-            header = next(reader)
-            if input_data.strip:
-                header = [h.strip() for h in header]
+        başlık = None
+        if girdi_verisi.başlık_var_mı:
+            başlık = next(okuyucu)
+            if girdi_verisi.boşlukları_sil:
+                başlık = [h.strip() for h in başlık]
 
-        for _ in range(input_data.skip_rows):
-            next(reader)
+        for _ in range(girdi_verisi.atlanacak_satırlar):
+            next(okuyucu)
 
-        def process_row(row):
-            data = {}
-            for i, value in enumerate(row):
-                if i not in input_data.skip_columns:
-                    if input_data.has_header and header:
-                        data[header[i]] = value.strip() if input_data.strip else value
+        def satırı_işle(satır):
+            veri = {}
+            for i, değer in enumerate(satır):
+                if i not in girdi_verisi.atlanacak_sütunlar:
+                    if girdi_verisi.başlık_var_mı and başlık:
+                        veri[başlık[i]] = değer.strip() if girdi_verisi.boşlukları_sil else değer
                     else:
-                        data[str(i)] = value.strip() if input_data.strip else value
-            return data
+                        veri[str(i)] = değer.strip() if girdi_verisi.boşlukları_sil else değer
+            return veri
 
-        all_data = []
-        for row in reader:
-            processed_row = process_row(row)
-            all_data.append(processed_row)
-            yield "row", processed_row
+        tüm_veri = []
+        for satır in okuyucu:
+            işlenmiş_satır = satırı_işle(satır)
+            tüm_veri.append(işlenmiş_satır)
+            yield "satır", işlenmiş_satır
 
-        yield "all_data", all_data
+        yield "tüm_veri", tüm_veri

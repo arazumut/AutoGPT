@@ -9,27 +9,27 @@ class StepThroughItemsBlock(Block):
     class Input(BlockSchema):
         items: list = SchemaField(
             advanced=False,
-            description="The list or dictionary of items to iterate over",
-            placeholder="[1, 2, 3, 4, 5] or {'key1': 'value1', 'key2': 'value2'}",
+            description="Üzerinde iterasyon yapılacak liste veya sözlük",
+            placeholder="[1, 2, 3, 4, 5] veya {'anahtar1': 'değer1', 'anahtar2': 'değer2'}",
             default=[],
         )
         items_object: dict = SchemaField(
             advanced=False,
-            description="The list or dictionary of items to iterate over",
-            placeholder="[1, 2, 3, 4, 5] or {'key1': 'value1', 'key2': 'value2'}",
+            description="Üzerinde iterasyon yapılacak liste veya sözlük",
+            placeholder="[1, 2, 3, 4, 5] veya {'anahtar1': 'değer1', 'anahtar2': 'değer2'}",
             default={},
         )
         items_str: str = SchemaField(
             advanced=False,
-            description="The list or dictionary of items to iterate over",
-            placeholder="[1, 2, 3, 4, 5] or {'key1': 'value1', 'key2': 'value2'}",
+            description="Üzerinde iterasyon yapılacak liste veya sözlük",
+            placeholder="[1, 2, 3, 4, 5] veya {'anahtar1': 'değer1', 'anahtar2': 'değer2'}",
             default="",
         )
 
     class Output(BlockSchema):
-        item: Any = SchemaField(description="The current item in the iteration")
+        item: Any = SchemaField(description="Iterasyondaki mevcut öğe")
         key: Any = SchemaField(
-            description="The key or index of the current item in the iteration",
+            description="Iterasyondaki mevcut öğenin anahtarı veya indeksi",
         )
 
     def __init__(self):
@@ -38,8 +38,8 @@ class StepThroughItemsBlock(Block):
             input_schema=StepThroughItemsBlock.Input,
             output_schema=StepThroughItemsBlock.Output,
             categories={BlockCategory.LOGIC},
-            description="Iterates over a list or dictionary and outputs each item.",
-            test_input={"items": [1, 2, 3, {"key1": "value1", "key2": "value2"}]},
+            description="Bir liste veya sözlük üzerinde iterasyon yapar ve her öğeyi çıktılar.",
+            test_input={"items": [1, 2, 3, {"anahtar1": "değer1", "anahtar2": "değer2"}]},
             test_output=[
                 ("item", 1),
                 ("key", 0),
@@ -47,7 +47,7 @@ class StepThroughItemsBlock(Block):
                 ("key", 1),
                 ("item", 3),
                 ("key", 2),
-                ("item", {"key1": "value1", "key2": "value2"}),
+                ("item", {"anahtar1": "değer1", "anahtar2": "değer2"}),
                 ("key", 3),
             ],
             test_mock={},
@@ -62,12 +62,12 @@ class StepThroughItemsBlock(Block):
             else:
                 items = data
             if isinstance(items, dict):
-                # If items is a dictionary, iterate over its values
-                for item in items.values():
+                # Eğer items bir sözlükse, değerleri üzerinde iterasyon yap
+                for key, item in items.items():
                     yield "item", item
-                    yield "key", item
+                    yield "key", key
             else:
-                # If items is a list, iterate over the list
+                # Eğer items bir listeyse, liste üzerinde iterasyon yap
                 for index, item in enumerate(items):
                     yield "item", item
                     yield "key", index

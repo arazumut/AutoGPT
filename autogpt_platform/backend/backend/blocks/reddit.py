@@ -9,29 +9,29 @@ from backend.data.model import BlockSecret, SchemaField, SecretField
 from backend.util.mock import MockObject
 
 
-class RedditCredentials(BaseModel):
+class RedditKimlikBilgileri(BaseModel):
     client_id: BlockSecret = SecretField(key="reddit_client_id")
     client_secret: BlockSecret = SecretField(key="reddit_client_secret")
     username: BlockSecret = SecretField(key="reddit_username")
     password: BlockSecret = SecretField(key="reddit_password")
     user_agent: str = "AutoGPT:1.0 (by /u/autogpt)"
 
-    model_config = ConfigDict(title="Reddit Credentials")
+    model_config = ConfigDict(title="Reddit Kimlik Bilgileri")
 
 
-class RedditPost(BaseModel):
+class RedditGönderisi(BaseModel):
     id: str
     subreddit: str
-    title: str
-    body: str
+    başlık: str
+    içerik: str
 
 
-class RedditComment(BaseModel):
-    post_id: str
-    comment: str
+class RedditYorumu(BaseModel):
+    gönderi_id: str
+    yorum: str
 
 
-def get_praw(creds: RedditCredentials) -> praw.Reddit:
+def praw_al(creds: RedditKimlikBilgileri) -> praw.Reddit:
     client = praw.Reddit(
         client_id=creds.client_id.get_secret_value(),
         client_secret=creds.client_secret.get_secret_value(),
@@ -41,41 +41,41 @@ def get_praw(creds: RedditCredentials) -> praw.Reddit:
     )
     me = client.user.me()
     if not me:
-        raise ValueError("Invalid Reddit credentials.")
-    print(f"Logged in as Reddit user: {me.name}")
+        raise ValueError("Geçersiz Reddit kimlik bilgileri.")
+    print(f"Reddit kullanıcısı olarak giriş yapıldı: {me.name}")
     return client
 
 
-class GetRedditPostsBlock(Block):
-    class Input(BlockSchema):
-        subreddit: str = SchemaField(description="Subreddit name")
-        creds: RedditCredentials = SchemaField(
-            description="Reddit credentials",
-            default=RedditCredentials(),
+class RedditGönderileriniAlBlok(Block):
+    class Girdi(BlockSchema):
+        subreddit: str = SchemaField(description="Subreddit adı")
+        creds: RedditKimlikBilgileri = SchemaField(
+            description="Reddit kimlik bilgileri",
+            default=RedditKimlikBilgileri(),
         )
-        last_minutes: int | None = SchemaField(
-            description="Post time to stop minutes ago while fetching posts",
+        son_dakikalar: int | None = SchemaField(
+            description="Gönderileri çekerken durulacak dakika",
             default=None,
         )
-        last_post: str | None = SchemaField(
-            description="Post ID to stop when reached while fetching posts",
+        son_gönderi: str | None = SchemaField(
+            description="Gönderileri çekerken ulaşıldığında durulacak gönderi ID'si",
             default=None,
         )
-        post_limit: int | None = SchemaField(
-            description="Number of posts to fetch", default=10
+        gönderi_limiti: int | None = SchemaField(
+            description="Çekilecek gönderi sayısı", default=10
         )
 
-    class Output(BlockSchema):
-        post: RedditPost = SchemaField(description="Reddit post")
+    class Çıktı(BlockSchema):
+        gönderi: RedditGönderisi = SchemaField(description="Reddit gönderisi")
 
     def __init__(self):
         super().__init__(
             disabled=True,
             id="c6731acb-4285-4ee1-bc9b-03d0766c370f",
-            description="This block fetches Reddit posts from a defined subreddit name.",
+            description="Bu blok, tanımlı bir subreddit adından Reddit gönderilerini çeker.",
             categories={BlockCategory.SOCIAL},
-            input_schema=GetRedditPostsBlock.Input,
-            output_schema=GetRedditPostsBlock.Output,
+            input_schema=RedditGönderileriniAlBlok.Girdi,
+            output_schema=RedditGönderileriniAlBlok.Çıktı,
             test_input={
                 "creds": {
                     "client_id": "client_id",
@@ -85,90 +85,90 @@ class GetRedditPostsBlock(Block):
                     "user_agent": "user_agent",
                 },
                 "subreddit": "subreddit",
-                "last_post": "id3",
-                "post_limit": 2,
+                "son_gönderi": "id3",
+                "gönderi_limiti": 2,
             },
             test_output=[
                 (
-                    "post",
-                    RedditPost(
-                        id="id1", subreddit="subreddit", title="title1", body="body1"
+                    "gönderi",
+                    RedditGönderisi(
+                        id="id1", subreddit="subreddit", başlık="başlık1", içerik="içerik1"
                     ),
                 ),
                 (
-                    "post",
-                    RedditPost(
-                        id="id2", subreddit="subreddit", title="title2", body="body2"
+                    "gönderi",
+                    RedditGönderisi(
+                        id="id2", subreddit="subreddit", başlık="başlık2", içerik="içerik2"
                     ),
                 ),
             ],
             test_mock={
                 "get_posts": lambda _: [
-                    MockObject(id="id1", title="title1", selftext="body1"),
-                    MockObject(id="id2", title="title2", selftext="body2"),
-                    MockObject(id="id3", title="title2", selftext="body2"),
+                    MockObject(id="id1", title="başlık1", selftext="içerik1"),
+                    MockObject(id="id2", title="başlık2", selftext="içerik2"),
+                    MockObject(id="id3", title="başlık2", selftext="içerik2"),
                 ]
             },
         )
 
     @staticmethod
-    def get_posts(input_data: Input) -> Iterator[praw.reddit.Submission]:
-        client = get_praw(input_data.creds)
-        subreddit = client.subreddit(input_data.subreddit)
-        return subreddit.new(limit=input_data.post_limit or 10)
+    def gönderileri_al(girdi_verisi: Girdi) -> Iterator[praw.reddit.Submission]:
+        client = praw_al(girdi_verisi.creds)
+        subreddit = client.subreddit(girdi_verisi.subreddit)
+        return subreddit.new(limit=girdi_verisi.gönderi_limiti or 10)
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
+    def çalıştır(self, girdi_verisi: Girdi, **kwargs) -> BlockOutput:
         current_time = datetime.now(tz=timezone.utc)
-        for post in self.get_posts(input_data):
-            if input_data.last_minutes:
-                post_datetime = datetime.fromtimestamp(
-                    post.created_utc, tz=timezone.utc
+        for gönderi in self.gönderileri_al(girdi_verisi):
+            if girdi_verisi.son_dakikalar:
+                gönderi_zamanı = datetime.fromtimestamp(
+                    gönderi.created_utc, tz=timezone.utc
                 )
-                time_difference = current_time - post_datetime
-                if time_difference.total_seconds() / 60 > input_data.last_minutes:
+                zaman_farkı = current_time - gönderi_zamanı
+                if zaman_farkı.total_seconds() / 60 > girdi_verisi.son_dakikalar:
                     continue
 
-            if input_data.last_post and post.id == input_data.last_post:
+            if girdi_verisi.son_gönderi and gönderi.id == girdi_verisi.son_gönderi:
                 break
 
-            yield "post", RedditPost(
-                id=post.id,
-                subreddit=input_data.subreddit,
-                title=post.title,
-                body=post.selftext,
+            yield "gönderi", RedditGönderisi(
+                id=gönderi.id,
+                subreddit=girdi_verisi.subreddit,
+                başlık=gönderi.title,
+                içerik=gönderi.selftext,
             )
 
 
-class PostRedditCommentBlock(Block):
-    class Input(BlockSchema):
-        creds: RedditCredentials = SchemaField(
-            description="Reddit credentials", default=RedditCredentials()
+class RedditYorumuGönderBlok(Block):
+    class Girdi(BlockSchema):
+        creds: RedditKimlikBilgileri = SchemaField(
+            description="Reddit kimlik bilgileri", default=RedditKimlikBilgileri()
         )
-        data: RedditComment = SchemaField(description="Reddit comment")
+        veri: RedditYorumu = SchemaField(description="Reddit yorumu")
 
-    class Output(BlockSchema):
-        comment_id: str = SchemaField(description="Posted comment ID")
+    class Çıktı(BlockSchema):
+        yorum_id: str = SchemaField(description="Gönderilen yorum ID'si")
 
     def __init__(self):
         super().__init__(
             id="4a92261b-701e-4ffb-8970-675fd28e261f",
-            description="This block posts a Reddit comment on a specified Reddit post.",
+            description="Bu blok, belirtilen bir Reddit gönderisine yorum yapar.",
             categories={BlockCategory.SOCIAL},
-            input_schema=PostRedditCommentBlock.Input,
-            output_schema=PostRedditCommentBlock.Output,
-            test_input={"data": {"post_id": "id", "comment": "comment"}},
-            test_output=[("comment_id", "dummy_comment_id")],
+            input_schema=RedditYorumuGönderBlok.Girdi,
+            output_schema=RedditYorumuGönderBlok.Çıktı,
+            test_input={"veri": {"gönderi_id": "id", "yorum": "yorum"}},
+            test_output=[("yorum_id", "dummy_comment_id")],
             test_mock={"reply_post": lambda creds, comment: "dummy_comment_id"},
         )
 
     @staticmethod
-    def reply_post(creds: RedditCredentials, comment: RedditComment) -> str:
-        client = get_praw(creds)
-        submission = client.submission(id=comment.post_id)
-        new_comment = submission.reply(comment.comment)
-        if not new_comment:
-            raise ValueError("Failed to post comment.")
-        return new_comment.id
+    def gönderiye_yorum_yap(creds: RedditKimlikBilgileri, yorum: RedditYorumu) -> str:
+        client = praw_al(creds)
+        submission = client.submission(id=yorum.gönderi_id)
+        yeni_yorum = submission.reply(yorum.yorum)
+        if not yeni_yorum:
+            raise ValueError("Yorum gönderilemedi.")
+        return yeni_yorum.id
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
-        yield "comment_id", self.reply_post(input_data.creds, input_data.data)
+    def çalıştır(self, girdi_verisi: Girdi, **kwargs) -> BlockOutput:
+        yield "yorum_id", self.gönderiye_yorum_yap(girdi_verisi.creds, girdi_verisi.veri)

@@ -6,7 +6,7 @@ from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
 from backend.data.model import SchemaField
 
 
-class BlokKurulumBloğu(Block):
+class BlockSetup(Block):
     """
     Bu blok, sistemdeki diğer blokların doğrulanmasını ve kurulmasını sağlar.
 
@@ -14,16 +14,16 @@ class BlokKurulumBloğu(Block):
         Bu blok, sunucuda uzaktan kod yürütülmesine izin verir ve yalnızca geliştirme amaçlı kullanılmalıdır.
     """
 
-    class Girdi(BlockSchema):
-        kod: str = SchemaField(
+    class Input(BlockSchema):
+        code: str = SchemaField(
             description="Kurulacak bloğun Python kodu",
         )
 
-    class Çıktı(BlockSchema):
-        başarı: str = SchemaField(
+    class Output(BlockSchema):
+        success: str = SchemaField(
             description="Blok başarıyla kurulduğunda başarı mesajı",
         )
-        hata: str = SchemaField(
+        error: str = SchemaField(
             description="Blok kurulumu başarısız olursa hata mesajı",
         )
 
@@ -32,39 +32,39 @@ class BlokKurulumBloğu(Block):
             id="45e78db5-03e9-447f-9395-308d712f5f08",
             description="Bir kod dizesi verildiğinde, bu blok bir blok kodunun sisteme doğrulanmasını ve kurulmasını sağlar.",
             categories={BlockCategory.BASIC},
-            input_schema=BlokKurulumBloğu.Girdi,
-            output_schema=BlokKurulumBloğu.Çıktı,
+            input_schema=BlockSetup.Input,
+            output_schema=BlockSetup.Output,
             disabled=True,
         )
 
-    def çalıştır(self, girdi_verisi: Girdi, **kwargs) -> BlockOutput:
-        kod = girdi_verisi.kod
+    def run(self, input_data: Input, **kwargs) -> BlockOutput:
+        code = input_data.code
 
-        if arama := re.search(r"class (\w+)\(Block\):", kod):
-            sınıf_adı = arama.group(1)
+        if match := re.search(r"class (\w+)\(Block\):", code):
+            class_name = match.group(1)
         else:
             raise RuntimeError("Kodda sınıf bulunamadı.")
 
-        if arama := re.search(r"id=\"(\w+-\w+-\w+-\w+-\w+)\"", kod):
-            dosya_adı = arama.group(1)
+        if match := re.search(r"id=\"(\w+-\w+-\w+-\w+-\w+)\"", code):
+            file_name = match.group(1)
         else:
             raise RuntimeError("Kodda UUID bulunamadı.")
 
-        blok_dizini = os.path.dirname(__file__)
-        dosya_yolu = f"{blok_dizini}/{dosya_adı}.py"
-        modül_adı = f"backend.blocks.{dosya_adı}"
-        with open(dosya_yolu, "w") as f:
-            f.write(kod)
+        block_directory = os.path.dirname(__file__)
+        file_path = f"{block_directory}/{file_name}.py"
+        module_name = f"backend.blocks.{file_name}"
+        with open(file_path, "w") as f:
+            f.write(code)
 
         try:
-            modül = __import__(modül_adı, fromlist=[sınıf_adı])
-            blok_sınıfı: Type[Block] = getattr(modül, sınıf_adı)
-            blok = blok_sınıfı()
+            module = __import__(module_name, fromlist=[class_name])
+            block_class: Type[Block] = getattr(module, class_name)
+            block = block_class()
 
             from backend.util.test import execute_block_test
 
-            execute_block_test(blok)
-            yield "başarı", "Blok başarıyla kuruldu."
+            execute_block_test(block)
+            yield "success", "Blok başarıyla kuruldu."
         except Exception as e:
-            os.remove(dosya_yolu)
-            raise RuntimeError(f"[Kod]\n{kod}\n\n[Hata]\n{str(e)}")
+            os.remove(file_path)
+            raise RuntimeError(f"[Kod]\n{code}\n\n[Hata]\n{str(e)}")

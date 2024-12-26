@@ -15,6 +15,7 @@ from backend.data.model import (
 from backend.integrations.providers import ProviderName
 from backend.util.request import requests
 
+# Test için kullanılan API anahtar bilgileri
 TEST_CREDENTIALS = APIKeyCredentials(
     id="01234567-89ab-cdef-0123-456789abcdef",
     provider="medium",
@@ -29,69 +30,69 @@ TEST_CREDENTIALS_INPUT = {
     "title": TEST_CREDENTIALS.type,
 }
 
-
+# Yayın durumu seçenekleri
 class PublishToMediumStatus(str, Enum):
     PUBLIC = "public"
     DRAFT = "draft"
     UNLISTED = "unlisted"
 
-
+# Medium'a gönderi yayınlama bloğu
 class PublishToMediumBlock(Block):
     class Input(BlockSchema):
         author_id: BlockSecret = SecretField(
             key="medium_author_id",
-            description="""The Medium AuthorID of the user. You can get this by calling the /me endpoint of the Medium API.\n\ncurl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" https://api.medium.com/v1/me" the response will contain the authorId field.""",
-            placeholder="Enter the author's Medium AuthorID",
+            description="""Kullanıcının Medium AuthorID'si. Bunu Medium API'sinin /me endpoint'ini çağırarak alabilirsiniz.\n\ncurl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" https://api.medium.com/v1/me" yanıtında authorId alanı bulunacaktır.""",
+            placeholder="Yazarın Medium AuthorID'sini girin",
         )
         title: str = SchemaField(
-            description="The title of your Medium post",
-            placeholder="Enter your post title",
+            description="Medium gönderinizin başlığı",
+            placeholder="Gönderi başlığınızı girin",
         )
         content: str = SchemaField(
-            description="The main content of your Medium post",
-            placeholder="Enter your post content",
+            description="Medium gönderinizin ana içeriği",
+            placeholder="Gönderi içeriğinizi girin",
         )
         content_format: str = SchemaField(
-            description="The format of the content: 'html' or 'markdown'",
+            description="İçeriğin formatı: 'html' veya 'markdown'",
             placeholder="html",
         )
         tags: List[str] = SchemaField(
-            description="List of tags for your Medium post (up to 5)",
-            placeholder="['technology', 'AI', 'blogging']",
+            description="Medium gönderiniz için etiket listesi (en fazla 5)",
+            placeholder="['teknoloji', 'AI', 'blog']",
         )
         canonical_url: str | None = SchemaField(
             default=None,
-            description="The original home of this content, if it was originally published elsewhere",
+            description="Bu içeriğin orijinal olarak yayınlandığı yer, eğer başka bir yerde yayınlandıysa",
             placeholder="https://yourblog.com/original-post",
         )
         publish_status: PublishToMediumStatus = SchemaField(
-            description="The publish status",
+            description="Yayın durumu",
             placeholder=PublishToMediumStatus.DRAFT,
         )
         license: str = SchemaField(
             default="all-rights-reserved",
-            description="The license of the post: 'all-rights-reserved', 'cc-40-by', 'cc-40-by-sa', 'cc-40-by-nd', 'cc-40-by-nc', 'cc-40-by-nc-nd', 'cc-40-by-nc-sa', 'cc-40-zero', 'public-domain'",
+            description="Gönderinin lisansı: 'all-rights-reserved', 'cc-40-by', 'cc-40-by-sa', 'cc-40-by-nd', 'cc-40-by-nc', 'cc-40-by-nc-nd', 'cc-40-by-nc-sa', 'cc-40-zero', 'public-domain'",
             placeholder="all-rights-reserved",
         )
         notify_followers: bool = SchemaField(
             default=False,
-            description="Whether to notify followers that the user has published",
+            description="Kullanıcının takipçilerine yayınlandığını bildirip bildirmeyeceği",
             placeholder="False",
         )
         credentials: CredentialsMetaInput[
             Literal[ProviderName.MEDIUM], Literal["api_key"]
         ] = CredentialsField(
-            description="The Medium integration can be used with any API key with sufficient permissions for the blocks it is used on.",
+            description="Medium entegrasyonu, yeterli izinlere sahip herhangi bir API anahtarı ile kullanılabilir.",
         )
 
     class Output(BlockSchema):
-        post_id: str = SchemaField(description="The ID of the created Medium post")
-        post_url: str = SchemaField(description="The URL of the created Medium post")
+        post_id: str = SchemaField(description="Oluşturulan Medium gönderisinin ID'si")
+        post_url: str = SchemaField(description="Oluşturulan Medium gönderisinin URL'si")
         published_at: int = SchemaField(
-            description="The timestamp when the post was published"
+            description="Gönderinin yayınlandığı zamanın zaman damgası"
         )
         error: str = SchemaField(
-            description="Error message if the post creation failed"
+            description="Gönderi oluşturma başarısız olursa hata mesajı"
         )
 
     def __init__(self):
@@ -99,14 +100,14 @@ class PublishToMediumBlock(Block):
             id="3f7b2dcb-4a78-4e3f-b0f1-88132e1b89df",
             input_schema=PublishToMediumBlock.Input,
             output_schema=PublishToMediumBlock.Output,
-            description="Publishes a post to Medium.",
+            description="Medium'a bir gönderi yayınlar.",
             categories={BlockCategory.SOCIAL},
             test_input={
                 "author_id": "1234567890abcdef",
-                "title": "Test Post",
-                "content": "<h1>Test Content</h1><p>This is a test post.</p>",
+                "title": "Test Gönderisi",
+                "content": "<h1>Test İçeriği</h1><p>Bu bir test gönderisidir.</p>",
                 "content_format": "html",
-                "tags": ["test", "automation"],
+                "tags": ["test", "otomasyon"],
                 "license": "all-rights-reserved",
                 "notify_followers": False,
                 "publish_status": PublishToMediumStatus.DRAFT.value,
@@ -190,6 +191,6 @@ class PublishToMediumBlock(Block):
             yield "published_at", response["data"]["publishedAt"]
         else:
             error_message = response.get("errors", [{}])[0].get(
-                "message", "Unknown error occurred"
+                "message", "Bilinmeyen bir hata oluştu"
             )
-            raise RuntimeError(f"Failed to create Medium post: {error_message}")
+            raise RuntimeError(f"Medium gönderisi oluşturulamadı: {error_message}")

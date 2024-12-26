@@ -15,6 +15,7 @@ from backend.data.model import (
 )
 from backend.integrations.providers import ProviderName
 
+# Test kimlik bilgileri
 TEST_CREDENTIALS = APIKeyCredentials(
     id="01234567-89ab-cdef-0123-456789abcdef",
     provider="replicate",
@@ -29,12 +30,11 @@ TEST_CREDENTIALS_INPUT = {
     "title": TEST_CREDENTIALS.type,
 }
 
-
-# Model name enum
+# Model adı enum
 class ReplicateFluxModelName(str, Enum):
-    FLUX_SCHNELL = ("Flux Schnell",)
-    FLUX_PRO = ("Flux Pro",)
-    FLUX_PRO1_1 = ("Flux Pro 1.1",)
+    FLUX_SCHNELL = "Flux Schnell"
+    FLUX_PRO = "Flux Pro"
+    FLUX_PRO1_1 = "Flux Pro 1.1"
 
     @property
     def api_name(self):
@@ -45,99 +45,96 @@ class ReplicateFluxModelName(str, Enum):
         }
         return api_names[self]
 
-
-# Image type Enum
+# Görüntü türü enum
 class ImageType(str, Enum):
     WEBP = "webp"
     JPG = "jpg"
     PNG = "png"
-
 
 class ReplicateFluxAdvancedModelBlock(Block):
     class Input(BlockSchema):
         credentials: CredentialsMetaInput[
             Literal[ProviderName.REPLICATE], Literal["api_key"]
         ] = CredentialsField(
-            description="The Replicate integration can be used with "
-            "any API key with sufficient permissions for the blocks it is used on.",
+            description="Replicate entegrasyonu, üzerinde kullanıldığı bloklar için yeterli izinlere sahip herhangi bir API anahtarı ile kullanılabilir.",
         )
         prompt: str = SchemaField(
-            description="Text prompt for image generation",
-            placeholder="e.g., 'A futuristic cityscape at sunset'",
-            title="Prompt",
+            description="Görüntü oluşturma için metin istemi",
+            placeholder="örneğin, 'Gün batımında fütüristik bir şehir manzarası'",
+            title="İstem",
         )
         replicate_model_name: ReplicateFluxModelName = SchemaField(
-            description="The name of the Image Generation Model, i.e Flux Schnell",
+            description="Görüntü Oluşturma Modelinin adı, örneğin Flux Schnell",
             default=ReplicateFluxModelName.FLUX_SCHNELL,
-            title="Image Generation Model",
+            title="Görüntü Oluşturma Modeli",
             advanced=False,
         )
         seed: int | None = SchemaField(
-            description="Random seed. Set for reproducible generation",
+            description="Rastgele tohum. Tekrar üretilebilir oluşturma için ayarlayın",
             default=None,
-            title="Seed",
+            title="Tohum",
         )
         steps: int = SchemaField(
-            description="Number of diffusion steps",
+            description="Difüzyon adımlarının sayısı",
             default=25,
-            title="Steps",
+            title="Adımlar",
         )
         guidance: float = SchemaField(
             description=(
-                "Controls the balance between adherence to the text prompt and image quality/diversity. "
-                "Higher values make the output more closely match the prompt but may reduce overall image quality."
+                "Metin istemine uyum ile görüntü kalitesi/çeşitliliği arasındaki dengeyi kontrol eder. "
+                "Daha yüksek değerler, çıktının isteme daha sıkı uymasını sağlar ancak genel görüntü kalitesini düşürebilir."
             ),
             default=3,
-            title="Guidance",
+            title="Rehberlik",
         )
         interval: float = SchemaField(
             description=(
-                "Interval is a setting that increases the variance in possible outputs. "
-                "Setting this value low will ensure strong prompt following with more consistent outputs."
+                "Aralık, olası çıktılardaki varyansı artıran bir ayardır. "
+                "Bu değeri düşük ayarlamak, daha tutarlı çıktılarla güçlü istem takibini sağlar."
             ),
             default=2,
-            title="Interval",
+            title="Aralık",
         )
         aspect_ratio: str = SchemaField(
-            description="Aspect ratio for the generated image",
+            description="Oluşturulan görüntünün en boy oranı",
             default="1:1",
-            title="Aspect Ratio",
-            placeholder="Choose from: 1:1, 16:9, 2:3, 3:2, 4:5, 5:4, 9:16",
+            title="En Boy Oranı",
+            placeholder="Seçenekler: 1:1, 16:9, 2:3, 3:2, 4:5, 5:4, 9:16",
         )
         output_format: ImageType = SchemaField(
-            description="File format of the output image",
+            description="Çıktı görüntüsünün dosya formatı",
             default=ImageType.WEBP,
-            title="Output Format",
+            title="Çıktı Formatı",
         )
         output_quality: int = SchemaField(
             description=(
-                "Quality when saving the output images, from 0 to 100. "
-                "Not relevant for .png outputs"
+                "Çıktı görüntülerini kaydederken kalite, 0'dan 100'e kadar. "
+                ".png çıktıları için geçerli değildir"
             ),
             default=80,
-            title="Output Quality",
+            title="Çıktı Kalitesi",
         )
         safety_tolerance: int = SchemaField(
-            description="Safety tolerance, 1 is most strict and 5 is most permissive",
+            description="Güvenlik toleransı, 1 en katı ve 5 en hoşgörülü",
             default=2,
-            title="Safety Tolerance",
+            title="Güvenlik Toleransı",
         )
 
     class Output(BlockSchema):
-        result: str = SchemaField(description="Generated output")
-        error: str = SchemaField(description="Error message if the model run failed")
+        result: str = SchemaField(description="Oluşturulan çıktı")
+        error: str = SchemaField(description="Model çalıştırma başarısız olursa hata mesajı")
 
     def __init__(self):
         super().__init__(
             id="90f8c45e-e983-4644-aa0b-b4ebe2f531bc",
-            description="This block runs Flux models on Replicate with advanced settings.",
+            description="Bu blok, Replicate üzerinde gelişmiş ayarlarla Flux modellerini çalıştırır.",
             categories={BlockCategory.AI},
             input_schema=ReplicateFluxAdvancedModelBlock.Input,
             output_schema=ReplicateFluxAdvancedModelBlock.Output,
             test_input={
                 "credentials": TEST_CREDENTIALS_INPUT,
                 "replicate_model_name": ReplicateFluxModelName.FLUX_SCHNELL,
-                "prompt": "A beautiful landscape painting of a serene lake at sunrise",
+                "prompt": "Gün doğumunda sakin bir gölün güzel bir manzara resmi",
                 "seed": None,
                 "steps": 25,
                 "guidance": 3.0,
@@ -162,12 +159,12 @@ class ReplicateFluxAdvancedModelBlock(Block):
     def run(
         self, input_data: Input, *, credentials: APIKeyCredentials, **kwargs
     ) -> BlockOutput:
-        # If the seed is not provided, generate a random seed
+        # Tohum sağlanmadıysa, rastgele bir tohum oluştur
         seed = input_data.seed
         if seed is None:
             seed = int.from_bytes(os.urandom(4), "big")
 
-        # Run the model using the provided inputs
+        # Sağlanan girdilerle modeli çalıştır
         result = self.run_model(
             api_key=credentials.api_key,
             model_name=input_data.replicate_model_name.api_name,
@@ -197,11 +194,11 @@ class ReplicateFluxAdvancedModelBlock(Block):
         output_quality,
         safety_tolerance,
     ):
-        # Initialize Replicate client with the API key
+        # Replicate istemcisini API anahtarı ile başlat
         client = replicate.Client(api_token=api_key.get_secret_value())
 
-        # Run the model with additional parameters
-        output: FileOutput | list[FileOutput] = client.run(  # type: ignore This is because they changed the return type, and didn't update the type hint! It should be overloaded depending on the value of `use_file_output` to `FileOutput | list[FileOutput]` but it's `Any | Iterator[Any]`
+        # Ek parametrelerle modeli çalıştır
+        output: FileOutput | list[FileOutput] = client.run(
             f"{model_name}",
             input={
                 "prompt": prompt,
@@ -214,24 +211,20 @@ class ReplicateFluxAdvancedModelBlock(Block):
                 "output_quality": output_quality,
                 "safety_tolerance": safety_tolerance,
             },
-            wait=False,  # don't arbitrarily return data:octect/stream or sometimes url depending on the model???? what is this api
+            wait=False,
         )
 
-        # Check if output is a list or a string and extract accordingly; otherwise, assign a default message
+        # Çıktının bir liste mi yoksa bir string mi olduğunu kontrol et ve buna göre çıkar; aksi takdirde varsayılan bir mesaj ata
         if isinstance(output, list) and len(output) > 0:
             if isinstance(output[0], FileOutput):
-                result_url = output[0].url  # If output is a list, get the first element
+                result_url = output[0].url  # Çıktı bir listeyse, ilk öğeyi al
             else:
-                result_url = output[
-                    0
-                ]  # If output is a list and not a FileOutput, get the first element. Should never happen, but just in case.
+                result_url = output[0]  # Çıktı bir liste ve FileOutput değilse, ilk öğeyi al. Asla olmamalı, ama her ihtimale karşı.
         elif isinstance(output, FileOutput):
-            result_url = output.url  # If output is a FileOutput, use the url
+            result_url = output.url  # Çıktı bir FileOutput ise, url'yi kullan
         elif isinstance(output, str):
-            result_url = output  # If output is a string (for some reason due to their janky type hinting), use it directly
+            result_url = output  # Çıktı bir string ise (bazı nedenlerden dolayı janky type hinting nedeniyle), doğrudan kullan
         else:
-            result_url = (
-                "No output received"  # Fallback message if output is not as expected
-            )
+            result_url = "Çıktı alınamadı"  # Çıktı beklenildiği gibi değilse, geri dönüş mesajı
 
         return result_url

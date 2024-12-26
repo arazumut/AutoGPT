@@ -13,6 +13,7 @@ from backend.data.model import (
 from backend.integrations.providers import ProviderName
 from backend.util.request import requests
 
+# Test için kullanılacak API anahtar bilgileri
 TEST_CREDENTIALS = APIKeyCredentials(
     id="01234567-89ab-cdef-0123-456789abcdef",
     provider="d_id",
@@ -27,72 +28,70 @@ TEST_CREDENTIALS_INPUT = {
     "title": TEST_CREDENTIALS.type,
 }
 
-
-class CreateTalkingAvatarVideoBlock(Block):
-    class Input(BlockSchema):
-        credentials: CredentialsMetaInput[
+class KonuşanAvatarVideoOluşturmaBloğu(Block):
+    class Girdi(BlockSchema):
+        kimlik_bilgileri: CredentialsMetaInput[
             Literal[ProviderName.D_ID], Literal["api_key"]
         ] = CredentialsField(
-            description="The D-ID integration can be used with "
-            "any API key with sufficient permissions for the blocks it is used on.",
+            description="D-ID entegrasyonu, bloklar üzerinde kullanılmak üzere yeterli izinlere sahip herhangi bir API anahtarı ile kullanılabilir.",
         )
-        script_input: str = SchemaField(
-            description="The text input for the script",
-            placeholder="Welcome to AutoGPT",
+        senaryo_girdisi: str = SchemaField(
+            description="Senaryo için metin girdisi",
+            placeholder="AutoGPT'ye hoş geldiniz",
         )
-        provider: Literal["microsoft", "elevenlabs", "amazon"] = SchemaField(
-            description="The voice provider to use", default="microsoft"
+        sağlayıcı: Literal["microsoft", "elevenlabs", "amazon"] = SchemaField(
+            description="Kullanılacak ses sağlayıcısı", default="microsoft"
         )
-        voice_id: str = SchemaField(
-            description="The voice ID to use, get list of voices [here](https://docs.agpt.co/server/d_id)",
+        ses_id: str = SchemaField(
+            description="Kullanılacak ses kimliği, ses listesini [buradan](https://docs.agpt.co/server/d_id) alın",
             default="en-US-JennyNeural",
         )
-        presenter_id: str = SchemaField(
-            description="The presenter ID to use", default="amy-Aq6OmGZnMt"
+        sunucu_id: str = SchemaField(
+            description="Kullanılacak sunucu kimliği", default="amy-Aq6OmGZnMt"
         )
-        driver_id: str = SchemaField(
-            description="The driver ID to use", default="Vcq0R4a8F0"
+        sürücü_id: str = SchemaField(
+            description="Kullanılacak sürücü kimliği", default="Vcq0R4a8F0"
         )
-        result_format: Literal["mp4", "gif", "wav"] = SchemaField(
-            description="The desired result format", default="mp4"
+        sonuç_formatı: Literal["mp4", "gif", "wav"] = SchemaField(
+            description="İstenen sonuç formatı", default="mp4"
         )
-        crop_type: Literal["wide", "square", "vertical"] = SchemaField(
-            description="The crop type for the presenter", default="wide"
+        kırpma_türü: Literal["geniş", "kare", "dikey"] = SchemaField(
+            description="Sunucu için kırpma türü", default="geniş"
         )
-        subtitles: bool = SchemaField(
-            description="Whether to include subtitles", default=False
+        altyazılar: bool = SchemaField(
+            description="Altyazıların dahil edilip edilmeyeceği", default=False
         )
-        ssml: bool = SchemaField(description="Whether the input is SSML", default=False)
-        max_polling_attempts: int = SchemaField(
-            description="Maximum number of polling attempts", default=30, ge=5
+        ssml: bool = SchemaField(description="Girdinin SSML olup olmadığı", default=False)
+        maksimum_yoklama_denemesi: int = SchemaField(
+            description="Maksimum yoklama denemesi sayısı", default=30, ge=5
         )
-        polling_interval: int = SchemaField(
-            description="Interval between polling attempts in seconds", default=10, ge=5
+        yoklama_aralığı: int = SchemaField(
+            description="Yoklama denemeleri arasındaki aralık (saniye)", default=10, ge=5
         )
 
-    class Output(BlockSchema):
-        video_url: str = SchemaField(description="The URL of the created video")
-        error: str = SchemaField(description="Error message if the request failed")
+    class Çıktı(BlockSchema):
+        video_url: str = SchemaField(description="Oluşturulan videonun URL'si")
+        hata: str = SchemaField(description="İstek başarısız olursa hata mesajı")
 
     def __init__(self):
         super().__init__(
             id="98c6f503-8c47-4b1c-a96d-351fc7c87dab",
-            description="This block integrates with D-ID to create video clips and retrieve their URLs.",
+            description="Bu blok, D-ID ile entegre olarak video klipler oluşturur ve URL'lerini alır.",
             categories={BlockCategory.AI},
-            input_schema=CreateTalkingAvatarVideoBlock.Input,
-            output_schema=CreateTalkingAvatarVideoBlock.Output,
+            input_schema=KonuşanAvatarVideoOluşturmaBloğu.Girdi,
+            output_schema=KonuşanAvatarVideoOluşturmaBloğu.Çıktı,
             test_input={
-                "credentials": TEST_CREDENTIALS_INPUT,
-                "script_input": "Welcome to AutoGPT",
-                "voice_id": "en-US-JennyNeural",
-                "presenter_id": "amy-Aq6OmGZnMt",
-                "driver_id": "Vcq0R4a8F0",
-                "result_format": "mp4",
-                "crop_type": "wide",
-                "subtitles": False,
+                "kimlik_bilgileri": TEST_CREDENTIALS_INPUT,
+                "senaryo_girdisi": "AutoGPT'ye hoş geldiniz",
+                "ses_id": "en-US-JennyNeural",
+                "sunucu_id": "amy-Aq6OmGZnMt",
+                "sürücü_id": "Vcq0R4a8F0",
+                "sonuç_formatı": "mp4",
+                "kırpma_türü": "geniş",
+                "altyazılar": False,
                 "ssml": False,
-                "max_polling_attempts": 5,
-                "polling_interval": 5,
+                "maksimum_yoklama_denemesi": 5,
+                "yoklama_aralığı": 5,
             },
             test_output=[
                 (
@@ -113,7 +112,7 @@ class CreateTalkingAvatarVideoBlock(Block):
             test_credentials=TEST_CREDENTIALS,
         )
 
-    def create_clip(self, api_key: SecretStr, payload: dict) -> dict:
+    def klip_oluştur(self, api_key: SecretStr, payload: dict) -> dict:
         url = "https://api.d-id.com/clips"
         headers = {
             "accept": "application/json",
@@ -123,7 +122,7 @@ class CreateTalkingAvatarVideoBlock(Block):
         response = requests.post(url, json=payload, headers=headers)
         return response.json()
 
-    def get_clip_status(self, api_key: SecretStr, clip_id: str) -> dict:
+    def klip_durumu_al(self, api_key: SecretStr, clip_id: str) -> dict:
         url = f"https://api.d-id.com/clips/{clip_id}"
         headers = {
             "accept": "application/json",
@@ -132,41 +131,41 @@ class CreateTalkingAvatarVideoBlock(Block):
         response = requests.get(url, headers=headers)
         return response.json()
 
-    def run(
-        self, input_data: Input, *, credentials: APIKeyCredentials, **kwargs
+    def çalıştır(
+        self, girdi_verisi: Girdi, *, kimlik_bilgileri: APIKeyCredentials, **kwargs
     ) -> BlockOutput:
-        # Create the clip
+        # Klip oluştur
         payload = {
             "script": {
                 "type": "text",
-                "subtitles": str(input_data.subtitles).lower(),
+                "subtitles": str(girdi_verisi.altyazılar).lower(),
                 "provider": {
-                    "type": input_data.provider,
-                    "voice_id": input_data.voice_id,
+                    "type": girdi_verisi.sağlayıcı,
+                    "voice_id": girdi_verisi.ses_id,
                 },
-                "ssml": str(input_data.ssml).lower(),
-                "input": input_data.script_input,
+                "ssml": str(girdi_verisi.ssml).lower(),
+                "input": girdi_verisi.senaryo_girdisi,
             },
-            "config": {"result_format": input_data.result_format},
-            "presenter_config": {"crop": {"type": input_data.crop_type}},
-            "presenter_id": input_data.presenter_id,
-            "driver_id": input_data.driver_id,
+            "config": {"result_format": girdi_verisi.sonuç_formatı},
+            "presenter_config": {"crop": {"type": girdi_verisi.kırpma_türü}},
+            "presenter_id": girdi_verisi.sunucu_id,
+            "driver_id": girdi_verisi.sürücü_id,
         }
 
-        response = self.create_clip(credentials.api_key, payload)
+        response = self.klip_oluştur(kimlik_bilgileri.api_key, payload)
         clip_id = response["id"]
 
-        # Poll for clip status
-        for _ in range(input_data.max_polling_attempts):
-            status_response = self.get_clip_status(credentials.api_key, clip_id)
+        # Klip durumu için yoklama yap
+        for _ in range(girdi_verisi.maksimum_yoklama_denemesi):
+            status_response = self.klip_durumu_al(kimlik_bilgileri.api_key, clip_id)
             if status_response["status"] == "done":
                 yield "video_url", status_response["result_url"]
                 return
             elif status_response["status"] == "error":
                 raise RuntimeError(
-                    f"Clip creation failed: {status_response.get('error', 'Unknown error')}"
+                    f"Klip oluşturma başarısız: {status_response.get('error', 'Bilinmeyen hata')}"
                 )
 
-            time.sleep(input_data.polling_interval)
+            time.sleep(girdi_verisi.yoklama_aralığı)
 
-        raise TimeoutError("Clip creation timed out")
+        raise TimeoutError("Klip oluşturma zaman aşımına uğradı")

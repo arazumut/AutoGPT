@@ -8,207 +8,207 @@ from backend.util import json, text
 formatter = text.TextFormatter()
 
 
-class MatchTextPatternBlock(Block):
-    class Input(BlockSchema):
-        text: Any = SchemaField(description="Text to match")
-        match: str = SchemaField(description="Pattern (Regex) to match")
-        data: Any = SchemaField(description="Data to be forwarded to output")
-        case_sensitive: bool = SchemaField(
-            description="Case sensitive match", default=True
+class MetinDeseniEşleştirmeBloğu(Block):
+    class Girdi(BlockSchema):
+        metin: Any = SchemaField(description="Eşleştirilecek metin")
+        desen: str = SchemaField(description="Eşleştirilecek desen (Regex)")
+        veri: Any = SchemaField(description="Çıktıya iletilecek veri")
+        büyük_küçük_harf_duyarlı: bool = SchemaField(
+            description="Büyük/küçük harf duyarlı eşleştirme", default=True
         )
-        dot_all: bool = SchemaField(description="Dot matches all", default=True)
+        nokta_herşeyi_eşleştirir: bool = SchemaField(description="Nokta her şeyi eşleştirir", default=True)
 
-    class Output(BlockSchema):
-        positive: Any = SchemaField(description="Output data if match is found")
-        negative: Any = SchemaField(description="Output data if match is not found")
+    class Çıktı(BlockSchema):
+        olumlu: Any = SchemaField(description="Eşleşme bulunursa çıktı verisi")
+        olumsuz: Any = SchemaField(description="Eşleşme bulunmazsa çıktı verisi")
 
     def __init__(self):
         super().__init__(
             id="3060088f-6ed9-4928-9ba7-9c92823a7ccd",
-            description="Matches text against a regex pattern and forwards data to positive or negative output based on the match.",
+            description="Metni bir regex deseniyle eşleştirir ve eşleşmeye göre veriyi olumlu veya olumsuz çıktıya iletir.",
             categories={BlockCategory.TEXT},
-            input_schema=MatchTextPatternBlock.Input,
-            output_schema=MatchTextPatternBlock.Output,
+            input_schema=MetinDeseniEşleştirmeBloğu.Girdi,
+            output_schema=MetinDeseniEşleştirmeBloğu.Çıktı,
             test_input=[
-                {"text": "ABC", "match": "ab", "data": "X", "case_sensitive": False},
-                {"text": "ABC", "match": "ab", "data": "Y", "case_sensitive": True},
-                {"text": "Hello World!", "match": ".orld.+", "data": "Z"},
-                {"text": "Hello World!", "match": "World![a-z]+", "data": "Z"},
+                {"metin": "ABC", "desen": "ab", "veri": "X", "büyük_küçük_harf_duyarlı": False},
+                {"metin": "ABC", "desen": "ab", "veri": "Y", "büyük_küçük_harf_duyarlı": True},
+                {"metin": "Hello World!", "desen": ".orld.+", "veri": "Z"},
+                {"metin": "Hello World!", "desen": "World![a-z]+", "veri": "Z"},
             ],
             test_output=[
-                ("positive", "X"),
-                ("negative", "Y"),
-                ("positive", "Z"),
-                ("negative", "Z"),
+                ("olumlu", "X"),
+                ("olumsuz", "Y"),
+                ("olumlu", "Z"),
+                ("olumsuz", "Z"),
             ],
         )
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
-        output = input_data.data or input_data.text
+    def run(self, input_data: Girdi, **kwargs) -> BlockOutput:
+        output = input_data.veri or input_data.metin
         flags = 0
-        if not input_data.case_sensitive:
+        if not input_data.büyük_küçük_harf_duyarlı:
             flags = flags | re.IGNORECASE
-        if input_data.dot_all:
+        if input_data.nokta_herşeyi_eşleştirir:
             flags = flags | re.DOTALL
 
-        if isinstance(input_data.text, str):
-            text = input_data.text
+        if isinstance(input_data.metin, str):
+            metin = input_data.metin
         else:
-            text = json.dumps(input_data.text)
+            metin = json.dumps(input_data.metin)
 
-        if re.search(input_data.match, text, flags=flags):
-            yield "positive", output
+        if re.search(input_data.desen, metin, flags=flags):
+            yield "olumlu", output
         else:
-            yield "negative", output
+            yield "olumsuz", output
 
 
-class ExtractTextInformationBlock(Block):
-    class Input(BlockSchema):
-        text: Any = SchemaField(description="Text to parse")
-        pattern: str = SchemaField(description="Pattern (Regex) to parse")
-        group: int = SchemaField(description="Group number to extract", default=0)
-        case_sensitive: bool = SchemaField(
-            description="Case sensitive match", default=True
+class MetinBilgisiÇıkarmaBloğu(Block):
+    class Girdi(BlockSchema):
+        metin: Any = SchemaField(description="Parçalanacak metin")
+        desen: str = SchemaField(description="Parçalanacak desen (Regex)")
+        grup: int = SchemaField(description="Çıkarılacak grup numarası", default=0)
+        büyük_küçük_harf_duyarlı: bool = SchemaField(
+            description="Büyük/küçük harf duyarlı eşleştirme", default=True
         )
-        dot_all: bool = SchemaField(description="Dot matches all", default=True)
-        find_all: bool = SchemaField(description="Find all matches", default=False)
+        nokta_herşeyi_eşleştirir: bool = SchemaField(description="Nokta her şeyi eşleştirir", default=True)
+        tümünü_bul: bool = SchemaField(description="Tüm eşleşmeleri bul", default=False)
 
-    class Output(BlockSchema):
-        positive: str = SchemaField(description="Extracted text")
-        negative: str = SchemaField(description="Original text")
+    class Çıktı(BlockSchema):
+        olumlu: str = SchemaField(description="Çıkarılan metin")
+        olumsuz: str = SchemaField(description="Orijinal metin")
 
     def __init__(self):
         super().__init__(
             id="3146e4fe-2cdd-4f29-bd12-0c9d5bb4deb0",
-            description="This block extracts the text from the given text using the pattern (regex).",
+            description="Bu blok, verilen metinden deseni (regex) kullanarak metin çıkarır.",
             categories={BlockCategory.TEXT},
-            input_schema=ExtractTextInformationBlock.Input,
-            output_schema=ExtractTextInformationBlock.Output,
+            input_schema=MetinBilgisiÇıkarmaBloğu.Girdi,
+            output_schema=MetinBilgisiÇıkarmaBloğu.Çıktı,
             test_input=[
-                {"text": "Hello, World!", "pattern": "Hello, (.+)", "group": 1},
-                {"text": "Hello, World!", "pattern": "Hello, (.+)", "group": 0},
-                {"text": "Hello, World!", "pattern": "Hello, (.+)", "group": 2},
-                {"text": "Hello, World!", "pattern": "hello,", "case_sensitive": False},
+                {"metin": "Hello, World!", "desen": "Hello, (.+)", "grup": 1},
+                {"metin": "Hello, World!", "desen": "Hello, (.+)", "grup": 0},
+                {"metin": "Hello, World!", "desen": "Hello, (.+)", "grup": 2},
+                {"metin": "Hello, World!", "desen": "hello,", "büyük_küçük_harf_duyarlı": False},
                 {
-                    "text": "Hello, World!! Hello, Earth!!",
-                    "pattern": "Hello, (\\S+)",
-                    "group": 1,
-                    "find_all": False,
+                    "metin": "Hello, World!! Hello, Earth!!",
+                    "desen": "Hello, (\\S+)",
+                    "grup": 1,
+                    "tümünü_bul": False,
                 },
                 {
-                    "text": "Hello, World!! Hello, Earth!!",
-                    "pattern": "Hello, (\\S+)",
-                    "group": 1,
-                    "find_all": True,
+                    "metin": "Hello, World!! Hello, Earth!!",
+                    "desen": "Hello, (\\S+)",
+                    "grup": 1,
+                    "tümünü_bul": True,
                 },
             ],
             test_output=[
-                ("positive", "World!"),
-                ("positive", "Hello, World!"),
-                ("negative", "Hello, World!"),
-                ("positive", "Hello,"),
-                ("positive", "World!!"),
-                ("positive", "World!!"),
-                ("positive", "Earth!!"),
+                ("olumlu", "World!"),
+                ("olumlu", "Hello, World!"),
+                ("olumsuz", "Hello, World!"),
+                ("olumlu", "Hello,"),
+                ("olumlu", "World!!"),
+                ("olumlu", "World!!"),
+                ("olumlu", "Earth!!"),
             ],
         )
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
+    def run(self, input_data: Girdi, **kwargs) -> BlockOutput:
         flags = 0
-        if not input_data.case_sensitive:
+        if not input_data.büyük_küçük_harf_duyarlı:
             flags = flags | re.IGNORECASE
-        if input_data.dot_all:
+        if input_data.nokta_herşeyi_eşleştirir:
             flags = flags | re.DOTALL
 
-        if isinstance(input_data.text, str):
-            txt = input_data.text
+        if isinstance(input_data.metin, str):
+            txt = input_data.metin
         else:
-            txt = json.dumps(input_data.text)
+            txt = json.dumps(input_data.metin)
 
         matches = [
-            match.group(input_data.group)
-            for match in re.finditer(input_data.pattern, txt, flags)
-            if input_data.group <= len(match.groups())
+            match.group(input_data.grup)
+            for match in re.finditer(input_data.desen, txt, flags)
+            if input_data.grup <= len(match.groups())
         ]
         for match in matches:
-            yield "positive", match
-            if not input_data.find_all:
+            yield "olumlu", match
+            if not input_data.tümünü_bul:
                 return
         if not matches:
-            yield "negative", input_data.text
+            yield "olumsuz", input_data.metin
 
 
-class FillTextTemplateBlock(Block):
-    class Input(BlockSchema):
-        values: dict[str, Any] = SchemaField(
-            description="Values (dict) to be used in format"
+class MetinŞablonuDoldurmaBloğu(Block):
+    class Girdi(BlockSchema):
+        değerler: dict[str, Any] = SchemaField(
+            description="Formatta kullanılacak değerler (dict)"
         )
         format: str = SchemaField(
-            description="Template to format the text using `values`"
+            description="`değerler` kullanılarak metni formatlamak için şablon"
         )
 
-    class Output(BlockSchema):
-        output: str = SchemaField(description="Formatted text")
+    class Çıktı(BlockSchema):
+        çıktı: str = SchemaField(description="Formatlanmış metin")
 
     def __init__(self):
         super().__init__(
             id="db7d8f02-2f44-4c55-ab7a-eae0941f0c30",
-            description="This block formats the given texts using the format template.",
+            description="Bu blok, verilen metinleri format şablonunu kullanarak formatlar.",
             categories={BlockCategory.TEXT},
-            input_schema=FillTextTemplateBlock.Input,
-            output_schema=FillTextTemplateBlock.Output,
+            input_schema=MetinŞablonuDoldurmaBloğu.Girdi,
+            output_schema=MetinŞablonuDoldurmaBloğu.Çıktı,
             test_input=[
                 {
-                    "values": {"name": "Alice", "hello": "Hello", "world": "World!"},
-                    "format": "{hello}, {world} {{name}}",
+                    "değerler": {"isim": "Alice", "merhaba": "Hello", "dünya": "World!"},
+                    "format": "{merhaba}, {dünya} {{isim}}",
                 },
                 {
-                    "values": {"list": ["Hello", " World!"]},
-                    "format": "{% for item in list %}{{ item }}{% endfor %}",
+                    "değerler": {"liste": ["Hello", " World!"]},
+                    "format": "{% for item in liste %}{{ item }}{% endfor %}",
                 },
                 {
-                    "values": {},
-                    "format": "{% set name = 'Alice' %}Hello, World! {{ name }}",
+                    "değerler": {},
+                    "format": "{% set isim = 'Alice' %}Hello, World! {{ isim }}",
                 },
             ],
             test_output=[
-                ("output", "Hello, World! Alice"),
-                ("output", "Hello World!"),
-                ("output", "Hello, World! Alice"),
+                ("çıktı", "Hello, World! Alice"),
+                ("çıktı", "Hello World!"),
+                ("çıktı", "Hello, World! Alice"),
             ],
         )
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
-        yield "output", formatter.format_string(input_data.format, input_data.values)
+    def run(self, input_data: Girdi, **kwargs) -> BlockOutput:
+        yield "çıktı", formatter.format_string(input_data.format, input_data.değerler)
 
 
-class CombineTextsBlock(Block):
-    class Input(BlockSchema):
-        input: list[str] = SchemaField(description="text input to combine")
-        delimiter: str = SchemaField(
-            description="Delimiter to combine texts", default=""
+class MetinleriBirleştirmeBloğu(Block):
+    class Girdi(BlockSchema):
+        girdi: list[str] = SchemaField(description="Birleştirilecek metin girişi")
+        ayırıcı: str = SchemaField(
+            description="Metinleri birleştirmek için ayırıcı", default=""
         )
 
-    class Output(BlockSchema):
-        output: str = SchemaField(description="Combined text")
+    class Çıktı(BlockSchema):
+        çıktı: str = SchemaField(description="Birleştirilmiş metin")
 
     def __init__(self):
         super().__init__(
             id="e30a4d42-7b7d-4e6a-b36e-1f9b8e3b7d85",
-            description="This block combines multiple input texts into a single output text.",
+            description="Bu blok, birden fazla metin girişini tek bir çıktı metnine birleştirir.",
             categories={BlockCategory.TEXT},
-            input_schema=CombineTextsBlock.Input,
-            output_schema=CombineTextsBlock.Output,
+            input_schema=MetinleriBirleştirmeBloğu.Girdi,
+            output_schema=MetinleriBirleştirmeBloğu.Çıktı,
             test_input=[
-                {"input": ["Hello world I like ", "cake and to go for walks"]},
-                {"input": ["This is a test", "Hi!"], "delimiter": "! "},
+                {"girdi": ["Hello world I like ", "cake and to go for walks"]},
+                {"girdi": ["This is a test", "Hi!"], "ayırıcı": "! "},
             ],
             test_output=[
-                ("output", "Hello world I like cake and to go for walks"),
-                ("output", "This is a test! Hi!"),
+                ("çıktı", "Hello world I like cake and to go for walks"),
+                ("çıktı", "This is a test! Hi!"),
             ],
         )
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
-        combined_text = input_data.delimiter.join(input_data.input)
-        yield "output", combined_text
+    def run(self, input_data: Girdi, **kwargs) -> BlockOutput:
+        birleştirilmiş_metin = input_data.ayırıcı.join(input_data.girdi)
+        yield "çıktı", birleştirilmiş_metin

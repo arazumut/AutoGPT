@@ -17,6 +17,7 @@ from backend.integrations.providers import ProviderName
 
 logger = logging.getLogger(__name__)
 
+# Test API anahtarı
 TEST_CREDENTIALS = APIKeyCredentials(
     id="01234567-89ab-cdef-0123-456789abcdef",
     provider="replicate",
@@ -31,96 +32,91 @@ TEST_CREDENTIALS_INPUT = {
     "title": TEST_CREDENTIALS.type,
 }
 
-
-# Model version enum
+# Model sürüm enum
 class MusicGenModelVersion(str, Enum):
     STEREO_LARGE = "stereo-large"
     MELODY_LARGE = "melody-large"
     LARGE = "large"
 
-
-# Audio format enum
+# Ses formatı enum
 class AudioFormat(str, Enum):
     WAV = "wav"
     MP3 = "mp3"
 
-
-# Normalization strategy enum
+# Normalizasyon stratejisi enum
 class NormalizationStrategy(str, Enum):
     LOUDNESS = "loudness"
     CLIP = "clip"
     PEAK = "peak"
     RMS = "rms"
 
-
 class AIMusicGeneratorBlock(Block):
     class Input(BlockSchema):
         credentials: CredentialsMetaInput[
             Literal[ProviderName.REPLICATE], Literal["api_key"]
         ] = CredentialsField(
-            description="The Replicate integration can be used with "
-            "any API key with sufficient permissions for the blocks it is used on.",
+            description="Replicate entegrasyonu, kullanıldığı bloklar için yeterli izinlere sahip herhangi bir API anahtarı ile kullanılabilir.",
         )
         prompt: str = SchemaField(
-            description="A description of the music you want to generate",
-            placeholder="e.g., 'An upbeat electronic dance track with heavy bass'",
-            title="Prompt",
+            description="Oluşturmak istediğiniz müziğin bir açıklaması",
+            placeholder="Örneğin, 'Ağır baslı neşeli bir elektronik dans parçası'",
+            title="Açıklama",
         )
         music_gen_model_version: MusicGenModelVersion = SchemaField(
-            description="Model to use for generation",
+            description="Oluşturma için kullanılacak model",
             default=MusicGenModelVersion.STEREO_LARGE,
-            title="Model Version",
+            title="Model Sürümü",
         )
         duration: int = SchemaField(
-            description="Duration of the generated audio in seconds",
+            description="Oluşturulan sesin süresi (saniye cinsinden)",
             default=8,
-            title="Duration",
+            title="Süre",
         )
         temperature: float = SchemaField(
-            description="Controls the 'conservativeness' of the sampling process. Higher temperature means more diversity",
+            description="Örnekleme sürecinin 'tutuculuğunu' kontrol eder. Daha yüksek sıcaklık daha fazla çeşitlilik demektir",
             default=1.0,
-            title="Temperature",
+            title="Sıcaklık",
         )
         top_k: int = SchemaField(
-            description="Reduces sampling to the k most likely tokens",
+            description="Örneklemeyi en olası k token ile sınırlar",
             default=250,
             title="Top K",
         )
         top_p: float = SchemaField(
-            description="Reduces sampling to tokens with cumulative probability of p. When set to 0 (default), top_k sampling is used",
+            description="Örneklemeyi kümülatif olasılığı p olan tokenlerle sınırlar. 0'a ayarlandığında (varsayılan), top_k örnekleme kullanılır",
             default=0.0,
             title="Top P",
         )
         classifier_free_guidance: int = SchemaField(
-            description="Increases the influence of inputs on the output. Higher values produce lower-variance outputs that adhere more closely to inputs",
+            description="Girdilerin çıktı üzerindeki etkisini artırır. Daha yüksek değerler, girdilere daha sıkı uyan düşük varyanslı çıktılar üretir",
             default=3,
-            title="Classifier Free Guidance",
+            title="Sınıflandırıcı Serbest Rehberlik",
         )
         output_format: AudioFormat = SchemaField(
-            description="Output format for generated audio",
+            description="Oluşturulan sesin çıkış formatı",
             default=AudioFormat.WAV,
-            title="Output Format",
+            title="Çıkış Formatı",
         )
         normalization_strategy: NormalizationStrategy = SchemaField(
-            description="Strategy for normalizing audio",
+            description="Sesin normalleştirilmesi için strateji",
             default=NormalizationStrategy.LOUDNESS,
-            title="Normalization Strategy",
+            title="Normalizasyon Stratejisi",
         )
 
     class Output(BlockSchema):
-        result: str = SchemaField(description="URL of the generated audio file")
-        error: str = SchemaField(description="Error message if the model run failed")
+        result: str = SchemaField(description="Oluşturulan ses dosyasının URL'si")
+        error: str = SchemaField(description="Model çalıştırma başarısız olursa hata mesajı")
 
     def __init__(self):
         super().__init__(
             id="44f6c8ad-d75c-4ae1-8209-aad1c0326928",
-            description="This block generates music using Meta's MusicGen model on Replicate.",
+            description="Bu blok, Meta'nın MusicGen modelini kullanarak Replicate üzerinde müzik oluşturur.",
             categories={BlockCategory.AI},
             input_schema=AIMusicGeneratorBlock.Input,
             output_schema=AIMusicGeneratorBlock.Output,
             test_input={
                 "credentials": TEST_CREDENTIALS_INPUT,
-                "prompt": "An upbeat electronic dance track with heavy bass",
+                "prompt": "Ağır baslı neşeli bir elektronik dans parçası",
                 "music_gen_model_version": MusicGenModelVersion.STEREO_LARGE,
                 "duration": 8,
                 "temperature": 1.0,
@@ -146,13 +142,13 @@ class AIMusicGeneratorBlock(Block):
         self, input_data: Input, *, credentials: APIKeyCredentials, **kwargs
     ) -> BlockOutput:
         max_retries = 3
-        retry_delay = 5  # seconds
+        retry_delay = 5  # saniye
         last_error = None
 
         for attempt in range(max_retries):
             try:
                 logger.debug(
-                    f"[AIMusicGeneratorBlock] - Running model (attempt {attempt + 1})"
+                    f"[AIMusicGeneratorBlock] - Model çalıştırılıyor (deneme {attempt + 1})"
                 )
                 result = self.run_model(
                     api_key=credentials.api_key,
@@ -170,17 +166,17 @@ class AIMusicGeneratorBlock(Block):
                     yield "result", result
                     return
                 else:
-                    last_error = "Model returned empty or invalid response"
+                    last_error = "Model boş veya geçersiz yanıt döndürdü"
                     raise ValueError(last_error)
             except Exception as e:
-                last_error = f"Unexpected error: {str(e)}"
-                logger.error(f"[AIMusicGeneratorBlock] - Error: {last_error}")
+                last_error = f"Beklenmeyen hata: {str(e)}"
+                logger.error(f"[AIMusicGeneratorBlock] - Hata: {last_error}")
                 if attempt < max_retries - 1:
                     time.sleep(retry_delay)
                     continue
 
-        # If we've exhausted all retries, yield the error
-        yield "error", f"Failed after {max_retries} attempts. Last error: {last_error}"
+        # Tüm denemeler tükendiyse, hatayı döndür
+        yield "error", f"{max_retries} denemeden sonra başarısız oldu. Son hata: {last_error}"
 
     def run_model(
         self,
@@ -195,10 +191,10 @@ class AIMusicGeneratorBlock(Block):
         output_format: AudioFormat,
         normalization_strategy: NormalizationStrategy,
     ):
-        # Initialize Replicate client with the API key
+        # Replicate istemcisini API anahtarı ile başlat
         client = replicate.Client(api_token=api_key.get_secret_value())
 
-        # Run the model with parameters
+        # Modeli parametrelerle çalıştır
         output = client.run(
             "meta/musicgen:671ac645ce5e552cc63a54a2bbff63fcf798043055d2dac5fc9e36a837eedcfb",
             input={
@@ -214,14 +210,12 @@ class AIMusicGeneratorBlock(Block):
             },
         )
 
-        # Handle the output
+        # Çıktıyı işle
         if isinstance(output, list) and len(output) > 0:
-            result_url = output[0]  # If output is a list, get the first element
+            result_url = output[0]  # Çıktı bir liste ise, ilk öğeyi al
         elif isinstance(output, str):
-            result_url = output  # If output is a string, use it directly
+            result_url = output  # Çıktı bir string ise, doğrudan kullan
         else:
-            result_url = (
-                "No output received"  # Fallback message if output is not as expected
-            )
+            result_url = "No output received"  # Çıktı beklenildiği gibi değilse yedek mesaj
 
         return result_url

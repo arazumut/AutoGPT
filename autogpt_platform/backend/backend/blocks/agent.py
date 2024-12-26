@@ -34,13 +34,13 @@ def get_event_bus():
 
 class AgentExecutorBlock(Block):
     class Input(BlockSchema):
-        user_id: str = SchemaField(description="User ID")
-        graph_id: str = SchemaField(description="Graph ID")
-        graph_version: int = SchemaField(description="Graph Version")
+        user_id: str = SchemaField(description="Kullanıcı ID'si")
+        graph_id: str = SchemaField(description="Graf ID'si")
+        graph_version: int = SchemaField(description="Graf Versiyonu")
 
-        data: BlockInput = SchemaField(description="Input data for the graph")
-        input_schema: dict = SchemaField(description="Input schema for the graph")
-        output_schema: dict = SchemaField(description="Output schema for the graph")
+        data: BlockInput = SchemaField(description="Graf için giriş verisi")
+        input_schema: dict = SchemaField(description="Graf için giriş şeması")
+        output_schema: dict = SchemaField(description="Graf için çıkış şeması")
 
     class Output(BlockSchema):
         pass
@@ -48,7 +48,7 @@ class AgentExecutorBlock(Block):
     def __init__(self):
         super().__init__(
             id="e189baac-8c20-45a1-94a7-55177ea42565",
-            description="Executes an existing agent inside your agent",
+            description="Ajanınızın içinde mevcut bir ajanı çalıştırır",
             input_schema=AgentExecutorBlock.Input,
             output_schema=AgentExecutorBlock.Output,
             block_type=BlockType.AGENT,
@@ -65,25 +65,25 @@ class AgentExecutorBlock(Block):
             user_id=input_data.user_id,
             data=input_data.data,
         )
-        log_id = f"Graph #{input_data.graph_id}-V{input_data.graph_version}, exec-id: {graph_exec.graph_exec_id}"
-        logger.info(f"Starting execution of {log_id}")
+        log_id = f"Graf #{input_data.graph_id}-V{input_data.graph_version}, exec-id: {graph_exec.graph_exec_id}"
+        logger.info(f"{log_id} çalıştırması başlatılıyor")
 
         for event in event_bus.listen(
             graph_id=graph_exec.graph_id, graph_exec_id=graph_exec.graph_exec_id
         ):
             logger.info(
-                f"Execution {log_id} produced input {event.input_data} output {event.output_data}"
+                f"{log_id} çalıştırması giriş {event.input_data} çıkış {event.output_data} üretti"
             )
 
             if not event.node_id:
                 if event.status in [ExecutionStatus.COMPLETED, ExecutionStatus.FAILED]:
-                    logger.info(f"Execution {log_id} ended with status {event.status}")
+                    logger.info(f"{log_id} çalıştırması {event.status} durumu ile sona erdi")
                     break
                 else:
                     continue
 
             if not event.block_id:
-                logger.warning(f"{log_id} received event without block_id {event}")
+                logger.warning(f"{log_id} block_id olmadan bir olay aldı {event}")
                 continue
 
             block = get_block(event.block_id)
@@ -92,9 +92,9 @@ class AgentExecutorBlock(Block):
 
             output_name = event.input_data.get("name")
             if not output_name:
-                logger.warning(f"{log_id} produced an output with no name {event}")
+                logger.warning(f"{log_id} isimsiz bir çıkış üretti {event}")
                 continue
 
             for output_data in event.output_data.get("output", []):
-                logger.info(f"Execution {log_id} produced {output_name}: {output_data}")
+                logger.info(f"{log_id} {output_name}: {output_data} üretti")
                 yield output_name, output_data

@@ -21,51 +21,51 @@ class SamplingMethod(str, Enum):
 class DataSamplingBlock(Block):
     class Input(BlockSchema):
         data: Union[Dict[str, Any], List[Union[dict, List[Any]]]] = SchemaField(
-            description="The dataset to sample from. Can be a single dictionary, a list of dictionaries, or a list of lists.",
-            placeholder="{'id': 1, 'value': 'a'} or [{'id': 1, 'value': 'a'}, {'id': 2, 'value': 'b'}, ...]",
+            description="Örnekleme yapılacak veri kümesi. Tek bir sözlük, sözlükler listesi veya listeler listesi olabilir.",
+            placeholder="{'id': 1, 'value': 'a'} veya [{'id': 1, 'value': 'a'}, {'id': 2, 'value': 'b'}, ...]",
         )
         sample_size: int = SchemaField(
-            description="The number of samples to take from the dataset.",
+            description="Veri kümesinden alınacak örnek sayısı.",
             placeholder="10",
             default=10,
         )
         sampling_method: SamplingMethod = SchemaField(
-            description="The method to use for sampling.",
+            description="Örnekleme için kullanılacak yöntem.",
             default=SamplingMethod.RANDOM,
         )
         accumulate: bool = SchemaField(
-            description="Whether to accumulate data before sampling.",
+            description="Örnekleme öncesinde verileri biriktirip biriktirmeyeceği.",
             default=False,
         )
         random_seed: Optional[int] = SchemaField(
-            description="Seed for random number generator (optional).",
+            description="Rastgele sayı üreteci için tohum (isteğe bağlı).",
             default=None,
         )
         stratify_key: Optional[str] = SchemaField(
-            description="Key to use for stratified sampling (required for stratified sampling).",
+            description="Tabakalı örnekleme için kullanılacak anahtar (tabakalı örnekleme için gereklidir).",
             default=None,
         )
         weight_key: Optional[str] = SchemaField(
-            description="Key to use for weighted sampling (required for weighted sampling).",
+            description="Ağırlıklı örnekleme için kullanılacak anahtar (ağırlıklı örnekleme için gereklidir).",
             default=None,
         )
         cluster_key: Optional[str] = SchemaField(
-            description="Key to use for cluster sampling (required for cluster sampling).",
+            description="Küme örnekleme için kullanılacak anahtar (küme örnekleme için gereklidir).",
             default=None,
         )
 
     class Output(BlockSchema):
         sampled_data: List[Union[dict, List[Any]]] = SchemaField(
-            description="The sampled subset of the input data."
+            description="Girdi verilerinin örneklenmiş alt kümesi."
         )
         sample_indices: List[int] = SchemaField(
-            description="The indices of the sampled data in the original dataset."
+            description="Örneklenen verilerin orijinal veri kümesindeki indeksleri."
         )
 
     def __init__(self):
         super().__init__(
             id="4a448883-71fa-49cf-91cf-70d793bd7d87",
-            description="This block samples data from a given dataset using various sampling methods.",
+            description="Bu blok, çeşitli örnekleme yöntemlerini kullanarak verilen bir veri kümesinden veri örnekler.",
             categories={BlockCategory.LOGIC},
             input_schema=DataSamplingBlock.Input,
             output_schema=DataSamplingBlock.Output,
@@ -100,15 +100,15 @@ class DataSamplingBlock(Block):
             elif isinstance(input_data.data, list):
                 self.accumulated_data.extend(input_data.data)
             else:
-                raise ValueError(f"Unsupported data type: {type(input_data.data)}")
+                raise ValueError(f"Desteklenmeyen veri türü: {type(input_data.data)}")
 
-            # If we don't have enough data yet, return without sampling
+            # Yeterli veri yoksa, örnekleme yapmadan geri dön
             if len(self.accumulated_data) < input_data.sample_size:
                 return
 
             data_to_sample = self.accumulated_data
         else:
-            # If not accumulating, use the input data directly
+            # Biriktirme yapılmıyorsa, girdi verilerini doğrudan kullan
             data_to_sample = (
                 input_data.data
                 if isinstance(input_data.data, list)
@@ -122,7 +122,7 @@ class DataSamplingBlock(Block):
 
         if input_data.sample_size > data_size:
             raise ValueError(
-                f"Sample size ({input_data.sample_size}) cannot be larger than the dataset size ({data_size})."
+                f"Örnek boyutu ({input_data.sample_size}), veri kümesi boyutundan ({data_size}) büyük olamaz."
             )
 
         indices = []
@@ -140,7 +140,7 @@ class DataSamplingBlock(Block):
         elif input_data.sampling_method == SamplingMethod.STRATIFIED:
             if not input_data.stratify_key:
                 raise ValueError(
-                    "Stratify key must be provided for stratified sampling."
+                    "Tabakalı örnekleme için tabakalama anahtarı sağlanmalıdır."
                 )
             strata = defaultdict(list)
             for i, item in enumerate(data_to_sample):
@@ -150,23 +150,23 @@ class DataSamplingBlock(Block):
                     strata_value = getattr(item, input_data.stratify_key)
                 else:
                     raise ValueError(
-                        f"Stratify key '{input_data.stratify_key}' not found in item {item}"
+                        f"Tabakalama anahtarı '{input_data.stratify_key}', öğe {item} içinde bulunamadı"
                     )
 
                 if strata_value is None:
                     raise ValueError(
-                        f"Stratify value for key '{input_data.stratify_key}' is None"
+                        f"Tabakalama anahtarı '{input_data.stratify_key}' için değer None"
                     )
 
                 strata[str(strata_value)].append(i)
 
-            # Calculate the number of samples to take from each stratum
+            # Her tabakadan alınacak örnek sayısını hesapla
             stratum_sizes = {
                 k: max(1, int(len(v) / data_size * input_data.sample_size))
                 for k, v in strata.items()
             }
 
-            # Adjust sizes to ensure we get exactly sample_size samples
+            # Tam olarak sample_size kadar örnek aldığımızdan emin olmak için boyutları ayarla
             while sum(stratum_sizes.values()) != input_data.sample_size:
                 if sum(stratum_sizes.values()) < input_data.sample_size:
                     stratum_sizes[
@@ -181,7 +181,7 @@ class DataSamplingBlock(Block):
                 indices.extend(random.sample(strata[stratum], size))
         elif input_data.sampling_method == SamplingMethod.WEIGHTED:
             if not input_data.weight_key:
-                raise ValueError("Weight key must be provided for weighted sampling.")
+                raise ValueError("Ağırlıklı örnekleme için ağırlık anahtarı sağlanmalıdır.")
             weights = []
             for item in data_to_sample:
                 if isinstance(item, dict):
@@ -190,23 +190,23 @@ class DataSamplingBlock(Block):
                     weight = getattr(item, input_data.weight_key)
                 else:
                     raise ValueError(
-                        f"Weight key '{input_data.weight_key}' not found in item {item}"
+                        f"Ağırlık anahtarı '{input_data.weight_key}', öğe {item} içinde bulunamadı"
                     )
 
                 if weight is None:
                     raise ValueError(
-                        f"Weight value for key '{input_data.weight_key}' is None"
+                        f"Ağırlık anahtarı '{input_data.weight_key}' için değer None"
                     )
                 try:
                     weights.append(float(weight))
                 except ValueError:
                     raise ValueError(
-                        f"Weight value '{weight}' cannot be converted to a number"
+                        f"Ağırlık değeri '{weight}', bir sayıya dönüştürülemez"
                     )
 
             if not weights:
                 raise ValueError(
-                    f"No valid weights found using key '{input_data.weight_key}'"
+                    f"Ağırlık anahtarı '{input_data.weight_key}' kullanılarak geçerli ağırlık bulunamadı"
                 )
 
             indices = random.choices(
@@ -220,7 +220,7 @@ class DataSamplingBlock(Block):
                     indices[j] = i
         elif input_data.sampling_method == SamplingMethod.CLUSTER:
             if not input_data.cluster_key:
-                raise ValueError("Cluster key must be provided for cluster sampling.")
+                raise ValueError("Küme örnekleme için küme anahtarı sağlanmalıdır.")
             clusters = defaultdict(list)
             for i, item in enumerate(data_to_sample):
                 if isinstance(item, dict):
@@ -229,12 +229,12 @@ class DataSamplingBlock(Block):
                     cluster_value = getattr(item, input_data.cluster_key)
                 else:
                     raise TypeError(
-                        f"Item {item} does not have the cluster key '{input_data.cluster_key}'"
+                        f"Öğe {item}, küme anahtarı '{input_data.cluster_key}' içermiyor"
                     )
 
                 clusters[str(cluster_value)].append(i)
 
-            # Randomly select clusters until we have enough samples
+            # Yeterli örnek alana kadar rastgele kümeler seç
             selected_clusters = []
             while (
                 sum(len(clusters[c]) for c in selected_clusters)
@@ -248,15 +248,15 @@ class DataSamplingBlock(Block):
             for cluster in selected_clusters:
                 indices.extend(clusters[cluster])
 
-            # If we have more samples than needed, randomly remove some
+            # Gerekenden fazla örnek varsa, rastgele bazılarını çıkar
             if len(indices) > input_data.sample_size:
                 indices = random.sample(indices, input_data.sample_size)
         else:
-            raise ValueError(f"Unknown sampling method: {input_data.sampling_method}")
+            raise ValueError(f"Bilinmeyen örnekleme yöntemi: {input_data.sampling_method}")
 
         sampled_data = [data_to_sample[i] for i in indices]
 
-        # Clear accumulated data after sampling if accumulation is enabled
+        # Biriktirme etkinse, örnekleme sonrası birikmiş verileri temizle
         if input_data.accumulate:
             self.accumulated_data = []
 

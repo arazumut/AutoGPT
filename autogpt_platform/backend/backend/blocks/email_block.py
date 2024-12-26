@@ -12,14 +12,14 @@ class EmailKimlikBilgileri(BaseModel):
     smtp_sunucusu: str = SchemaField(
         default="smtp.gmail.com", description="SMTP sunucu adresi"
     )
-    smtp_portu: int = SchemaField(default=25, description="SMTP port numarası")
+    smtp_portu: int = SchemaField(default=587, description="SMTP port numarası")
     smtp_kullanici_adi: BlockSecret = SecretField(key="smtp_kullanici_adi")
     smtp_sifre: BlockSecret = SecretField(key="smtp_sifre")
 
     model_config = ConfigDict(title="Email Kimlik Bilgileri")
 
 
-class EmailGondermeBloğu(Block):
+class EmailGondermeBlogu(Block):
     class Girdi(BlockSchema):
         alici_email: str = SchemaField(
             description="Alıcının email adresi", placeholder="alici@example.com"
@@ -47,15 +47,15 @@ class EmailGondermeBloğu(Block):
             id="4335878a-394e-4e67-adf2-919877ff49ae",
             description="Bu blok sağlanan SMTP kimlik bilgilerini kullanarak email gönderir.",
             categories={BlockCategory.OUTPUT},
-            input_schema=EmailGondermeBloğu.Girdi,
-            output_schema=EmailGondermeBloğu.Cikti,
+            input_schema=EmailGondermeBlogu.Girdi,
+            output_schema=EmailGondermeBlogu.Cikti,
             test_input={
                 "alici_email": "alici@example.com",
                 "konu": "Test Email",
                 "govde": "Bu bir test emailidir.",
                 "kimlik_bilgileri": {
                     "smtp_sunucusu": "smtp.gmail.com",
-                    "smtp_portu": 25,
+                    "smtp_portu": 587,
                     "smtp_kullanici_adi": "your-email@gmail.com",
                     "smtp_sifre": "your-gmail-password",
                 },
@@ -87,9 +87,13 @@ class EmailGondermeBloğu(Block):
         return "Email başarıyla gönderildi"
 
     def run(self, girdi_verisi: Girdi, **kwargs) -> BlockOutput:
-        yield "durum", self.email_gonder(
-            girdi_verisi.kimlik_bilgileri,
-            girdi_verisi.alici_email,
-            girdi_verisi.konu,
-            girdi_verisi.govde,
-        )
+        try:
+            durum = self.email_gonder(
+                girdi_verisi.kimlik_bilgileri,
+                girdi_verisi.alici_email,
+                girdi_verisi.konu,
+                girdi_verisi.govde,
+            )
+            yield "durum", durum
+        except Exception as e:
+            yield "hata", str(e)

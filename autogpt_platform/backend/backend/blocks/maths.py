@@ -6,119 +6,119 @@ from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
 from backend.data.model import SchemaField
 
 
-class Operation(Enum):
-    ADD = "Add"
-    SUBTRACT = "Subtract"
-    MULTIPLY = "Multiply"
-    DIVIDE = "Divide"
-    POWER = "Power"
+class Islem(Enum):
+    TOPLA = "Topla"
+    CIKAR = "Çıkar"
+    CARP = "Çarp"
+    BOL = "Böl"
+    US = "Üs"
 
 
-class CalculatorBlock(Block):
-    class Input(BlockSchema):
-        operation: Operation = SchemaField(
-            description="Choose the math operation you want to perform",
-            placeholder="Select an operation",
+class HesapMakinesiBlok(Block):
+    class Girdi(BlockSchema):
+        islem: Islem = SchemaField(
+            description="Yapmak istediğiniz matematiksel işlemi seçin",
+            placeholder="Bir işlem seçin",
         )
         a: float = SchemaField(
-            description="Enter the first number (A)", placeholder="For example: 10"
+            description="Birinci sayıyı girin (A)", placeholder="Örneğin: 10"
         )
         b: float = SchemaField(
-            description="Enter the second number (B)", placeholder="For example: 5"
+            description="İkinci sayıyı girin (B)", placeholder="Örneğin: 5"
         )
-        round_result: bool = SchemaField(
-            description="Do you want to round the result to a whole number?",
+        sonucu_yuvarla: bool = SchemaField(
+            description="Sonucu tam sayıya yuvarlamak ister misiniz?",
             default=False,
         )
 
-    class Output(BlockSchema):
-        result: float = SchemaField(description="The result of your calculation")
+    class Cikti(BlockSchema):
+        sonuc: float = SchemaField(description="Hesaplamanızın sonucu")
 
     def __init__(self):
         super().__init__(
             id="b1ab9b19-67a6-406d-abf5-2dba76d00c79",
-            input_schema=CalculatorBlock.Input,
-            output_schema=CalculatorBlock.Output,
-            description="Performs a mathematical operation on two numbers.",
+            input_schema=HesapMakinesiBlok.Girdi,
+            output_schema=HesapMakinesiBlok.Cikti,
+            description="İki sayı üzerinde matematiksel bir işlem gerçekleştirir.",
             categories={BlockCategory.LOGIC},
             test_input={
-                "operation": Operation.ADD.value,
+                "islem": Islem.TOPLA.value,
                 "a": 10.0,
                 "b": 5.0,
-                "round_result": False,
+                "sonucu_yuvarla": False,
             },
             test_output=[
-                ("result", 15.0),
+                ("sonuc", 15.0),
             ],
         )
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
-        operation = input_data.operation
+    def run(self, input_data: Girdi, **kwargs) -> BlockOutput:
+        islem = input_data.islem
         a = input_data.a
         b = input_data.b
 
-        operations = {
-            Operation.ADD: operator.add,
-            Operation.SUBTRACT: operator.sub,
-            Operation.MULTIPLY: operator.mul,
-            Operation.DIVIDE: operator.truediv,
-            Operation.POWER: operator.pow,
+        islemler = {
+            Islem.TOPLA: operator.add,
+            Islem.CIKAR: operator.sub,
+            Islem.CARP: operator.mul,
+            Islem.BOL: operator.truediv,
+            Islem.US: operator.pow,
         }
 
-        op_func = operations[operation]
+        islem_fonksiyonu = islemler[islem]
 
         try:
-            if operation == Operation.DIVIDE and b == 0:
-                raise ZeroDivisionError("Cannot divide by zero")
+            if islem == Islem.BOL and b == 0:
+                raise ZeroDivisionError("Sıfıra bölme yapılamaz")
 
-            result = op_func(a, b)
+            sonuc = islem_fonksiyonu(a, b)
 
-            if input_data.round_result:
-                result = round(result)
+            if input_data.sonucu_yuvarla:
+                sonuc = round(sonuc)
 
-            yield "result", result
+            yield "sonuc", sonuc
 
         except ZeroDivisionError:
-            yield "result", float("inf")  # Return infinity for division by zero
+            yield "sonuc", float("inf")  # Sıfıra bölme için sonsuz döndür
         except Exception:
-            yield "result", float("nan")  # Return NaN for other errors
+            yield "sonuc", float("nan")  # Diğer hatalar için NaN döndür
 
 
-class CountItemsBlock(Block):
-    class Input(BlockSchema):
-        collection: Any = SchemaField(
-            description="Enter the collection you want to count. This can be a list, dictionary, string, or any other iterable.",
-            placeholder="For example: [1, 2, 3] or {'a': 1, 'b': 2} or 'hello'",
+class ElemanSayisiBlok(Block):
+    class Girdi(BlockSchema):
+        koleksiyon: Any = SchemaField(
+            description="Saymak istediğiniz koleksiyonu girin. Bu bir liste, sözlük, string veya başka bir iterable olabilir.",
+            placeholder="Örneğin: [1, 2, 3] veya {'a': 1, 'b': 2} veya 'merhaba'",
         )
 
-    class Output(BlockSchema):
-        count: int = SchemaField(description="The number of items in the collection")
+    class Cikti(BlockSchema):
+        sayi: int = SchemaField(description="Koleksiyondaki eleman sayısı")
 
     def __init__(self):
         super().__init__(
             id="3c9c2f42-b0c3-435f-ba35-05f7a25c772a",
-            input_schema=CountItemsBlock.Input,
-            output_schema=CountItemsBlock.Output,
-            description="Counts the number of items in a collection.",
+            input_schema=ElemanSayisiBlok.Girdi,
+            output_schema=ElemanSayisiBlok.Cikti,
+            description="Bir koleksiyondaki eleman sayısını sayar.",
             categories={BlockCategory.LOGIC},
-            test_input={"collection": [1, 2, 3, 4, 5]},
+            test_input={"koleksiyon": [1, 2, 3, 4, 5]},
             test_output=[
-                ("count", 5),
+                ("sayi", 5),
             ],
         )
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
-        collection = input_data.collection
+    def run(self, input_data: Girdi, **kwargs) -> BlockOutput:
+        koleksiyon = input_data.koleksiyon
 
         try:
-            if isinstance(collection, (str, list, tuple, set, dict)):
-                count = len(collection)
-            elif hasattr(collection, "__iter__"):
-                count = sum(1 for _ in collection)
+            if isinstance(koleksiyon, (str, list, tuple, set, dict)):
+                sayi = len(koleksiyon)
+            elif hasattr(koleksiyon, "__iter__"):
+                sayi = sum(1 for _ in koleksiyon)
             else:
-                raise ValueError("Input is not a countable collection")
+                raise ValueError("Girdi sayılabilir bir koleksiyon değil")
 
-            yield "count", count
+            yield "sayi", sayi
 
         except Exception:
-            yield "count", -1  # Return -1 to indicate an error
+            yield "sayi", -1  # Hata durumunda -1 döndür

@@ -7,27 +7,27 @@ from backend.data.block import Block, BlockCategory, BlockOutput, BlockSchema
 from backend.data.model import SchemaField
 
 
-class TranscribeYoutubeVideoBlock(Block):
-    class Input(BlockSchema):
+class YoutubeVideoTranskripsiyonBloğu(Block):
+    class Girdi(BlockSchema):
         youtube_url: str = SchemaField(
             title="YouTube URL",
-            description="The URL of the YouTube video to transcribe",
+            description="Transkribe edilecek YouTube videosunun URL'si",
             placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
         )
 
-    class Output(BlockSchema):
-        video_id: str = SchemaField(description="The extracted YouTube video ID")
-        transcript: str = SchemaField(description="The transcribed text of the video")
+    class Çıktı(BlockSchema):
+        video_id: str = SchemaField(description="Çıkarılan YouTube video ID'si")
+        transcript: str = SchemaField(description="Videonun transkribe edilmiş metni")
         error: str = SchemaField(
-            description="Any error message if the transcription fails"
+            description="Transkripsiyon başarısız olursa hata mesajı"
         )
 
     def __init__(self):
         super().__init__(
             id="f3a8f7e1-4b1d-4e5f-9f2a-7c3d5a2e6b4c",
-            input_schema=TranscribeYoutubeVideoBlock.Input,
-            output_schema=TranscribeYoutubeVideoBlock.Output,
-            description="Transcribes a YouTube video.",
+            input_schema=YoutubeVideoTranskripsiyonBloğu.Girdi,
+            output_schema=YoutubeVideoTranskripsiyonBloğu.Çıktı,
+            description="Bir YouTube videosunu transkribe eder.",
             categories={BlockCategory.SOCIAL},
             test_input={"youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
             test_output=[
@@ -46,7 +46,7 @@ class TranscribeYoutubeVideoBlock(Block):
         )
 
     @staticmethod
-    def extract_video_id(url: str) -> str:
+    def video_id_çıkar(url: str) -> str:
         parsed_url = urlparse(url)
         if parsed_url.netloc == "youtu.be":
             return parsed_url.path[1:]
@@ -58,15 +58,15 @@ class TranscribeYoutubeVideoBlock(Block):
                 return parsed_url.path.split("/")[2]
             if parsed_url.path[:3] == "/v/":
                 return parsed_url.path.split("/")[2]
-        raise ValueError(f"Invalid YouTube URL: {url}")
+        raise ValueError(f"Geçersiz YouTube URL'si: {url}")
 
     @staticmethod
-    def get_transcript(video_id: str):
+    def transkript_al(video_id: str):
         try:
             transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
 
             if not transcript_list:
-                raise ValueError(f"No transcripts found for the video: {video_id}")
+                raise ValueError(f"Video için transkript bulunamadı: {video_id}")
 
             for transcript in transcript_list:
                 first_transcript = transcript_list.find_transcript(
@@ -77,13 +77,13 @@ class TranscribeYoutubeVideoBlock(Block):
                 )
 
         except Exception:
-            raise ValueError(f"No transcripts found for the video: {video_id}")
+            raise ValueError(f"Video için transkript bulunamadı: {video_id}")
 
-    def run(self, input_data: Input, **kwargs) -> BlockOutput:
-        video_id = self.extract_video_id(input_data.youtube_url)
+    def çalıştır(self, girdi_verisi: Girdi, **kwargs) -> BlockOutput:
+        video_id = self.video_id_çıkar(girdi_verisi.youtube_url)
         yield "video_id", video_id
 
-        transcript = self.get_transcript(video_id)
+        transcript = self.transkript_al(video_id)
         formatter = TextFormatter()
         transcript_text = formatter.format_transcript(transcript)
 

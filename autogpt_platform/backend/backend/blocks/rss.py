@@ -21,32 +21,32 @@ class RSSEntry(pydantic.BaseModel):
 class ReadRSSFeedBlock(Block):
     class Input(BlockSchema):
         rss_url: str = SchemaField(
-            description="The URL of the RSS feed to read",
+            description="Okunacak RSS beslemesinin URL'si",
             placeholder="https://example.com/rss",
         )
         time_period: int = SchemaField(
-            description="The time period to check in minutes relative to the run block runtime, e.g. 60 would check for new entries in the last hour.",
+            description="Blok çalıştırma süresine göre kontrol edilecek zaman dilimi (dakika cinsinden), örneğin 60 son bir saat içindeki yeni girdileri kontrol eder.",
             placeholder="1440",
             default=1440,
         )
         polling_rate: int = SchemaField(
-            description="The number of seconds to wait between polling attempts.",
+            description="Anket denemeleri arasında beklenilecek saniye sayısı.",
             placeholder="300",
         )
         run_continuously: bool = SchemaField(
-            description="Whether to run the block continuously or just once.",
+            description="Blokun sürekli çalışıp çalışmayacağı veya sadece bir kez çalışıp çalışmayacağı.",
             default=True,
         )
 
     class Output(BlockSchema):
-        entry: RSSEntry = SchemaField(description="The RSS item")
+        entry: RSSEntry = SchemaField(description="RSS öğesi")
 
     def __init__(self):
         super().__init__(
             id="5ebe6768-8e5d-41e3-9134-1c7bd89a8d52",
             input_schema=ReadRSSFeedBlock.Input,
             output_schema=ReadRSSFeedBlock.Output,
-            description="Reads RSS feed entries from a given URL.",
+            description="Belirtilen URL'den RSS besleme girdilerini okur.",
             categories={BlockCategory.INPUT},
             test_input={
                 "rss_url": "https://example.com/rss",
@@ -58,12 +58,12 @@ class ReadRSSFeedBlock(Block):
                 (
                     "entry",
                     RSSEntry(
-                        title="Example RSS Item",
+                        title="Örnek RSS Öğesi",
                         link="https://example.com/article",
-                        description="This is an example RSS item description.",
+                        description="Bu bir örnek RSS öğesi açıklamasıdır.",
                         pub_date=datetime(2023, 6, 23, 12, 30, 0, tzinfo=timezone.utc),
                         author="John Doe",
-                        categories=["Technology", "News"],
+                        categories=["Teknoloji", "Haberler"],
                     ),
                 ),
             ],
@@ -71,12 +71,12 @@ class ReadRSSFeedBlock(Block):
                 "parse_feed": lambda *args, **kwargs: {
                     "entries": [
                         {
-                            "title": "Example RSS Item",
+                            "title": "Örnek RSS Öğesi",
                             "link": "https://example.com/article",
-                            "summary": "This is an example RSS item description.",
+                            "summary": "Bu bir örnek RSS öğesi açıklamasıdır.",
                             "published_parsed": (2023, 6, 23, 12, 30, 0, 4, 174, 0),
                             "author": "John Doe",
-                            "tags": [{"term": "Technology"}, {"term": "News"}],
+                            "tags": [{"term": "Teknoloji"}, {"term": "Haberler"}],
                         }
                     ]
                 }

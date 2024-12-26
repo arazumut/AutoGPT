@@ -28,31 +28,31 @@ TEST_CREDENTIALS_INPUT = {
 }
 
 # Yer bilgilerini tutan model
-class Place(BaseModel):
-    name: str
-    address: str
-    phone: str
-    rating: float
-    reviews: int
-    website: str
+class Yer(BaseModel):
+    isim: str
+    adres: str
+    telefon: str
+    puan: float
+    yorum_sayisi: int
+    web_sitesi: str
 
 # Google Maps arama bloğu
-class GoogleMapsSearchBlock(Block):
+class GoogleMapsAramaBlogu(Block):
     class Input(BlockSchema):
-        credentials: CredentialsMetaInput[
+        kimlik_bilgileri: CredentialsMetaInput[
             Literal[ProviderName.GOOGLE_MAPS], Literal["api_key"]
         ] = CredentialsField(description="Google Maps API Anahtarı")
-        query: str = SchemaField(
+        sorgu: str = SchemaField(
             description="Yerel işletmeler için arama sorgusu",
             placeholder="örneğin, 'New York'ta restoranlar'",
         )
-        radius: int = SchemaField(
+        yaricap: int = SchemaField(
             description="Arama yarıçapı (maksimum 50000 metre)",
             default=5000,
             ge=1,
             le=50000,
         )
-        max_results: int = SchemaField(
+        maksimum_sonuclar: int = SchemaField(
             description="Döndürülecek maksimum sonuç sayısı (maksimum 60)",
             default=20,
             ge=1,
@@ -60,44 +60,44 @@ class GoogleMapsSearchBlock(Block):
         )
 
     class Output(BlockSchema):
-        place: Place = SchemaField(description="Bulunan yer")
-        error: str = SchemaField(description="Arama başarısız olursa hata mesajı")
+        yer: Yer = SchemaField(description="Bulunan yer")
+        hata: str = SchemaField(description="Arama başarısız olursa hata mesajı")
 
     def __init__(self):
         super().__init__(
             id="f47ac10b-58cc-4372-a567-0e02b2c3d479",
             description="Bu blok Google Maps API kullanarak yerel işletmeleri arar.",
             categories={BlockCategory.SEARCH},
-            input_schema=GoogleMapsSearchBlock.Input,
-            output_schema=GoogleMapsSearchBlock.Output,
+            input_schema=GoogleMapsAramaBlogu.Input,
+            output_schema=GoogleMapsAramaBlogu.Output,
             test_input={
-                "credentials": TEST_CREDENTIALS_INPUT,
-                "query": "new york'ta restoranlar",
-                "radius": 5000,
-                "max_results": 5,
+                "kimlik_bilgileri": TEST_CREDENTIALS_INPUT,
+                "sorgu": "new york'ta restoranlar",
+                "yaricap": 5000,
+                "maksimum_sonuclar": 5,
             },
             test_output=[
                 (
-                    "place",
+                    "yer",
                     {
-                        "name": "Test Restoran",
-                        "address": "123 Test St, New York, NY 10001",
-                        "phone": "+1 (555) 123-4567",
-                        "rating": 4.5,
-                        "reviews": 100,
-                        "website": "https://testrestaurant.com",
+                        "isim": "Test Restoran",
+                        "adres": "123 Test St, New York, NY 10001",
+                        "telefon": "+1 (555) 123-4567",
+                        "puan": 4.5,
+                        "yorum_sayisi": 100,
+                        "web_sitesi": "https://testrestaurant.com",
                     },
                 ),
             ],
             test_mock={
-                "search_places": lambda *args, **kwargs: [
+                "arama_yerleri": lambda *args, **kwargs: [
                     {
-                        "name": "Test Restoran",
-                        "address": "123 Test St, New York, NY 10001",
-                        "phone": "+1 (555) 123-4567",
-                        "rating": 4.5,
-                        "reviews": 100,
-                        "website": "https://testrestaurant.com",
+                        "isim": "Test Restoran",
+                        "adres": "123 Test St, New York, NY 10001",
+                        "telefon": "+1 (555) 123-4567",
+                        "puan": 4.5,
+                        "yorum_sayisi": 100,
+                        "web_sitesi": "https://testrestaurant.com",
                     }
                 ]
             },
@@ -107,43 +107,43 @@ class GoogleMapsSearchBlock(Block):
     def run(
         self, input_data: Input, *, credentials: APIKeyCredentials, **kwargs
     ) -> BlockOutput:
-        places = self.search_places(
+        yerler = self.arama_yerleri(
             credentials.api_key,
-            input_data.query,
-            input_data.radius,
-            input_data.max_results,
+            input_data.sorgu,
+            input_data.yaricap,
+            input_data.maksimum_sonuclar,
         )
-        for place in places:
-            yield "place", place
+        for yer in yerler:
+            yield "yer", yer
 
-    def search_places(self, api_key: SecretStr, query, radius, max_results):
+    def arama_yerleri(self, api_key: SecretStr, sorgu, yaricap, maksimum_sonuclar):
         client = googlemaps.Client(key=api_key.get_secret_value())
-        return self._search_places(client, query, radius, max_results)
+        return self._arama_yerleri(client, sorgu, yaricap, maksimum_sonuclar)
 
-    def _search_places(self, client, query, radius, max_results):
-        results = []
-        next_page_token = None
-        while len(results) < max_results:
-            response = client.places(
-                query=query,
-                radius=radius,
-                page_token=next_page_token,
+    def _arama_yerleri(self, client, sorgu, yaricap, maksimum_sonuclar):
+        sonuçlar = []
+        sonraki_sayfa_tokeni = None
+        while len(sonuçlar) < maksimum_sonuclar:
+            yanit = client.places(
+                query=sorgu,
+                radius=yaricap,
+                page_token=sonraki_sayfa_tokeni,
             )
-            for place in response["results"]:
-                if len(results) >= max_results:
+            for yer in yanit["results"]:
+                if len(sonuçlar) >= maksimum_sonuclar:
                     break
-                place_details = client.place(place["place_id"])["result"]
-                results.append(
-                    Place(
-                        name=place_details.get("name", ""),
-                        address=place_details.get("formatted_address", ""),
-                        phone=place_details.get("formatted_phone_number", ""),
-                        rating=place_details.get("rating", 0),
-                        reviews=place_details.get("user_ratings_total", 0),
-                        website=place_details.get("website", ""),
+                yer_detaylari = client.place(yer["place_id"])["result"]
+                sonuçlar.append(
+                    Yer(
+                        isim=yer_detaylari.get("name", ""),
+                        adres=yer_detaylari.get("formatted_address", ""),
+                        telefon=yer_detaylari.get("formatted_phone_number", ""),
+                        puan=yer_detaylari.get("rating", 0),
+                        yorum_sayisi=yer_detaylari.get("user_ratings_total", 0),
+                        web_sitesi=yer_detaylari.get("website", ""),
                     )
                 )
-            next_page_token = response.get("next_page_token")
-            if not next_page_token:
+            sonraki_sayfa_tokeni = yanit.get("next_page_token")
+            if not sonraki_sayfa_tokeni:
                 break
-        return results
+        return sonuçlar

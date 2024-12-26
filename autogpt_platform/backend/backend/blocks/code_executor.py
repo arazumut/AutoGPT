@@ -29,7 +29,7 @@ TEST_CREDENTIALS_INPUT = {
 }
 
 # Desteklenen programlama dilleri
-class ProgrammingLanguage(Enum):
+class ProgramlamaDili(Enum):
     PYTHON = "python"
     JAVASCRIPT = "js"
     BASH = "bash"
@@ -37,18 +37,18 @@ class ProgrammingLanguage(Enum):
     JAVA = "java"
 
 # Kod yürütme bloğu
-class CodeExecutionBlock(Block):
+class KodYurutmeBlogu(Block):
     # TODO : Dosya yükleme ve indirme desteği ekle
     # Şu anda, CPU ve Belleği yalnızca önceden özelleştirilmiş bir sandbox şablonu oluşturarak özelleştirebilirsiniz
-    class Input(BlockSchema):
-        credentials: CredentialsMetaInput[
+    class Girdi(BlockSchema):
+        kimlik_bilgileri: CredentialsMetaInput[
             Literal[ProviderName.E2B], Literal["api_key"]
         ] = CredentialsField(
             description="E2B Sandbox için API anahtarınızı girin. Buradan alabilirsiniz - https://e2b.dev/docs",
         )
 
         # TODO : Komutları arka planda çalıştırma seçeneği ekle
-        setup_commands: list[str] = SchemaField(
+        kurulum_komutlari: list[str] = SchemaField(
             description=(
                 "Sandbox'u kodu çalıştırmadan önce ayarlamak için kabuk komutları. "
                 "İstediğiniz Debian tabanlı paket yöneticisini kurmak için `curl` veya `git` kullanabilirsiniz. "
@@ -60,24 +60,24 @@ class CodeExecutionBlock(Block):
             advanced=False,
         )
 
-        code: str = SchemaField(
+        kod: str = SchemaField(
             description="Sandbox içinde çalıştırılacak kod",
             placeholder="print('Merhaba, Dünya!')",
             default="",
             advanced=False,
         )
 
-        language: ProgrammingLanguage = SchemaField(
+        dil: ProgramlamaDili = SchemaField(
             description="Çalıştırılacak programlama dili",
-            default=ProgrammingLanguage.PYTHON,
+            default=ProgramlamaDili.PYTHON,
             advanced=False,
         )
 
-        timeout: int = SchemaField(
+        zaman_asimi: int = SchemaField(
             description="Çalıştırma zaman aşımı süresi (saniye cinsinden)", default=300
         )
 
-        template_id: str = SchemaField(
+        sablon_id: str = SchemaField(
             description=(
                 "Bir E2B sandbox şablonu kullanabilirsiniz, bunun için buraya ID'sini girin. "
                 "Daha fazla detay için E2B dokümanlarına bakın: "
@@ -87,36 +87,36 @@ class CodeExecutionBlock(Block):
             advanced=True,
         )
 
-    class Output(BlockSchema):
-        response: str = SchemaField(description="Kod yürütme yanıtı")
-        stdout_logs: str = SchemaField(
+    class Cikti(BlockSchema):
+        yanit: str = SchemaField(description="Kod yürütme yanıtı")
+        stdout_loglari: str = SchemaField(
             description="Çalıştırma sırasında standart çıktı logları"
         )
-        stderr_logs: str = SchemaField(description="Çalıştırma sırasında standart hata logları")
-        error: str = SchemaField(description="Çalıştırma başarısız olursa hata mesajı")
+        stderr_loglari: str = SchemaField(description="Çalıştırma sırasında standart hata logları")
+        hata: str = SchemaField(description="Çalıştırma başarısız olursa hata mesajı")
 
     def __init__(self):
         super().__init__(
             id="0b02b072-abe7-11ef-8372-fb5d162dd712",
             description="İnternet erişimi olan izole bir sandbox ortamında kod çalıştırır.",
             categories={BlockCategory.DEVELOPER_TOOLS},
-            input_schema=CodeExecutionBlock.Input,
-            output_schema=CodeExecutionBlock.Output,
+            input_schema=KodYurutmeBlogu.Girdi,
+            output_schema=KodYurutmeBlogu.Cikti,
             test_credentials=TEST_CREDENTIALS,
             test_input={
-                "credentials": TEST_CREDENTIALS_INPUT,
-                "code": "print('Merhaba Dünya')",
-                "language": ProgrammingLanguage.PYTHON.value,
-                "setup_commands": [],
-                "timeout": 300,
-                "template_id": "",
+                "kimlik_bilgileri": TEST_CREDENTIALS_INPUT,
+                "kod": "print('Merhaba Dünya')",
+                "dil": ProgramlamaDili.PYTHON.value,
+                "kurulum_komutlari": [],
+                "zaman_asimi": 300,
+                "sablon_id": "",
             },
             test_output=[
-                ("response", "Merhaba Dünya"),
-                ("stdout_logs", "Merhaba Dünya\n"),
+                ("yanit", "Merhaba Dünya"),
+                ("stdout_loglari", "Merhaba Dünya\n"),
             ],
             test_mock={
-                "execute_code": lambda code, language, setup_commands, timeout, api_key, template_id: (
+                "kod_yurut": lambda kod, dil, kurulum_komutlari, zaman_asimi, api_key, sablon_id: (
                     "Merhaba Dünya",
                     "Merhaba Dünya\n",
                     "",
@@ -124,68 +124,68 @@ class CodeExecutionBlock(Block):
             },
         )
 
-    def execute_code(
+    def kod_yurut(
         self,
-        code: str,
-        language: ProgrammingLanguage,
-        setup_commands: list[str],
-        timeout: int,
+        kod: str,
+        dil: ProgramlamaDili,
+        kurulum_komutlari: list[str],
+        zaman_asimi: int,
         api_key: str,
-        template_id: str,
+        sablon_id: str,
     ):
         try:
             sandbox = None
-            if template_id:
+            if sablon_id:
                 sandbox = Sandbox(
-                    template=template_id, api_key=api_key, timeout=timeout
+                    template=sablon_id, api_key=api_key, timeout=zaman_asimi
                 )
             else:
-                sandbox = Sandbox(api_key=api_key, timeout=timeout)
+                sandbox = Sandbox(api_key=api_key, timeout=zaman_asimi)
 
             if not sandbox:
                 raise Exception("Sandbox oluşturulamadı")
 
             # Kurulum komutlarını çalıştırma
-            for cmd in setup_commands:
+            for cmd in kurulum_komutlari:
                 sandbox.commands.run(cmd)
 
             # Kodu çalıştırma
             execution = sandbox.run_code(
-                code,
-                language=language.value,
+                kod,
+                language=dil.value,
                 on_error=lambda e: sandbox.kill(),  # Hata olursa sandbox'u öldür
             )
 
             if execution.error:
                 raise Exception(execution.error)
 
-            response = execution.text
-            stdout_logs = "".join(execution.logs.stdout)
-            stderr_logs = "".join(execution.logs.stderr)
+            yanit = execution.text
+            stdout_loglari = "".join(execution.logs.stdout)
+            stderr_loglari = "".join(execution.logs.stderr)
 
-            return response, stdout_logs, stderr_logs
+            return yanit, stdout_loglari, stderr_loglari
 
         except Exception as e:
             raise e
 
-    def run(
-        self, input_data: Input, *, credentials: APIKeyCredentials, **kwargs
+    def calistir(
+        self, girdi_verisi: Girdi, *, kimlik_bilgileri: APIKeyCredentials, **kwargs
     ) -> BlockOutput:
         try:
-            response, stdout_logs, stderr_logs = self.execute_code(
-                input_data.code,
-                input_data.language,
-                input_data.setup_commands,
-                input_data.timeout,
-                credentials.api_key.get_secret_value(),
-                input_data.template_id,
+            yanit, stdout_loglari, stderr_loglari = self.kod_yurut(
+                girdi_verisi.kod,
+                girdi_verisi.dil,
+                girdi_verisi.kurulum_komutlari,
+                girdi_verisi.zaman_asimi,
+                kimlik_bilgileri.api_key.get_secret_value(),
+                girdi_verisi.sablon_id,
             )
 
-            if response:
-                yield "response", response
-            if stdout_logs:
-                yield "stdout_logs", stdout_logs
-            if stderr_logs:
-                yield "stderr_logs", stderr_logs
+            if yanit:
+                yield "yanit", yanit
+            if stdout_loglari:
+                yield "stdout_loglari", stdout_loglari
+            if stderr_loglari:
+                yield "stderr_loglari", stderr_loglari
         except Exception as e:
-            yield "error", str(e)
+            yield "hata", str(e)
